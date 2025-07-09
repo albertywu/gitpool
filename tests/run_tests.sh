@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Integration test runner for treefarm CLI
+# Integration test runner for gitpool CLI
 
 set -e
 
@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 TEST_TIMEOUT="300s"
 VERBOSE=${VERBOSE:-false}
 
-echo -e "${YELLOW}Running Treefarm Integration Tests${NC}"
+echo -e "${YELLOW}Running GitPool Integration Tests${NC}"
 echo "=================================="
 
 # Change to tests directory
@@ -22,7 +22,7 @@ cd "$(dirname "$0")"
 
 # Clean up any existing test processes
 echo "Cleaning up any existing test processes..."
-pkill -f "treefarm.*daemon" || true
+pkill -f "gitpool.*daemon" || true
 sleep 1
 
 # Run the tests with timeout
@@ -40,7 +40,7 @@ exit_code=$?
 # Clean up
 echo
 echo "Cleaning up..."
-pkill -f "treefarm.*daemon" || true
+pkill -f "gitpool.*daemon" || true
 
 if [ $exit_code -eq 0 ]; then
     echo -e "${GREEN}All tests passed!${NC}"

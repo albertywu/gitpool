@@ -1,25 +1,24 @@
-# Treefarm Integration Tests
+# GitPool Integration Tests
 
-This directory contains integration tests for the treefarm CLI tool. These tests verify that all CLI commands work correctly together in a real environment.
+This directory contains integration tests for the gitpool CLI tool. These tests verify that all CLI commands work correctly together in a real environment.
 
 ## Test Coverage
 
 The integration test suite covers all major CLI commands:
 
 ### Daemon Commands
-- `treefarm daemon start` - Starting the background daemon
-- `treefarm daemon status` - Checking daemon status
+- `gitpool daemon start` - Starting the background daemon
+- `gitpool daemon status` - Checking daemon status
 
 ### Repository Management
-- `treefarm repo add` - Adding repositories with various configurations
-- `treefarm repo list` - Listing registered repositories
-- `treefarm repo remove` - Removing repositories
+- `gitpool repo add` - Adding repositories with various configurations
+- `gitpool repo list` - Listing registered repositories
+- `gitpool repo remove` - Removing repositories
 
 ### Worktree Operations
-- `treefarm claim --repo <name>` - Claiming worktrees
-- `treefarm claim --repo <name> --output-path` - Claiming with full path output
-- `treefarm release <worktree-id>` - Releasing worktrees back to pool
-- `treefarm pool status` - Checking pool status and statistics
+- `gitpool claim --repo <name>` - Claiming worktrees (returns both ID and path)
+- `gitpool release <worktree-id>` - Releasing worktrees back to pool
+- `gitpool pool status` - Checking pool status and statistics
 
 ### Full Workflow Tests
 - Complete end-to-end workflows combining multiple commands
@@ -48,17 +47,17 @@ VERBOSE=true ./run_tests.sh
 ### Test Environment
 
 The tests create a completely isolated environment:
-- **Temporary directory**: All test files are created in `/tmp/treefarm-test-*`
-- **Isolated config**: Uses temporary `.treefarm` directory
+- **Temporary directory**: All test files are created in `/tmp/gitpool-test-*`
+- **Isolated config**: Uses temporary `.gitpool` directory
 - **Test repositories**: Creates fresh git repositories for each test
-- **Separate binary**: Builds treefarm binary in test directory
+- **Separate binary**: Builds gitpool binary in test directory
 - **Clean cleanup**: Removes all temporary files after tests
 
 ### Test Structure
 
 Each test:
 1. Creates a fresh test environment
-2. Builds the treefarm binary
+2. Builds the gitpool binary
 3. Creates test git repositories
 4. Runs CLI commands and verifies output
 5. Cleans up all resources
@@ -79,8 +78,7 @@ Tests repository management:
 
 ### TestWorktreeCommands
 Tests worktree operations:
-- Claiming worktrees from repository pools
-- Claiming worktrees with path output
+- Claiming worktrees from repository pools (verifies both ID and path output)
 - Checking pool status and statistics
 - Releasing worktrees back to the pool
 - Verifying pool state after operations
@@ -111,7 +109,7 @@ Tests use the following configuration:
 
 **Permission errors**: Ensure the test script is executable: `chmod +x run_tests.sh`
 
-**Stale processes**: Clean up with: `pkill -f "treefarm.*daemon"`
+**Stale processes**: Clean up with: `pkill -f "gitpool.*daemon"`
 
 ### Debug Mode
 

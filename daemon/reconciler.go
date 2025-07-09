@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/uber/treefarm/config"
-	"github.com/uber/treefarm/db"
-	"github.com/uber/treefarm/models"
-	"github.com/uber/treefarm/pool"
+	"github.com/albertywu/gitpool/config"
+	"github.com/albertywu/gitpool/db"
+	"github.com/albertywu/gitpool/models"
+	"github.com/albertywu/gitpool/pool"
 )
 
 type Reconciler struct {

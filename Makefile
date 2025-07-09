@@ -3,9 +3,9 @@
 # Default target
 all: build
 
-# Build the treefarm binary
+# Build the gitpool binary
 build:
-	go build -o treefarm cmd/main.go
+	go build -o gitpool cmd/main.go
 
 # Run all tests
 test: test-unit test-integration
@@ -24,17 +24,17 @@ test-integration-verbose:
 
 # Clean up build artifacts and test files
 clean:
-	rm -f treefarm
+	rm -f gitpool
 	rm -f tests/integration_test
-	pkill -f "treefarm.*daemon" || true
+	pkill -f "gitpool.*daemon" || true
 
 # Install the binary
 install: build
-	cp treefarm /usr/local/bin/
+	cp gitpool /usr/local/bin/
 
 # Development helpers
 dev-build:
-	go build -race -o treefarm cmd/main.go
+	go build -race -o gitpool cmd/main.go
 
 fmt:
 	go fmt ./...
@@ -48,7 +48,7 @@ lint:
 # Help target
 help:
 	@echo "Available targets:"
-	@echo "  build                 - Build the treefarm binary"
+	@echo "  build                 - Build the gitpool binary"
 	@echo "  test                  - Run all tests (unit + integration)"
 	@echo "  test-unit             - Run unit tests only"
 	@echo "  test-integration      - Run integration tests"

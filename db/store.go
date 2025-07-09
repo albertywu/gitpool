@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/uber/treefarm/config"
-	"github.com/uber/treefarm/models"
+	"github.com/albertywu/gitpool/config"
+	"github.com/albertywu/gitpool/models"
 )
 
 type Store struct {
@@ -21,7 +21,7 @@ func NewStore() (*Store, error) {
 }
 
 func NewStoreWithPath(worktreeDir string) (*Store, error) {
-	dbPath := filepath.Join(worktreeDir, "treefarm.db")
+	dbPath := filepath.Join(worktreeDir, "gitpool.db")
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)

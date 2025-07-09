@@ -1,4 +1,4 @@
-module github.com/uber/treefarm
+module github.com/albertywu/gitpool
 
 go 1.21
 

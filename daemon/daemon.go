@@ -10,12 +10,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/uber/treefarm/config"
-	"github.com/uber/treefarm/db"
-	"github.com/uber/treefarm/ipc"
-	"github.com/uber/treefarm/models"
-	"github.com/uber/treefarm/pool"
-	"github.com/uber/treefarm/repo"
+	"github.com/albertywu/gitpool/config"
+	"github.com/albertywu/gitpool/db"
+	"github.com/albertywu/gitpool/ipc"
+	"github.com/albertywu/gitpool/models"
+	"github.com/albertywu/gitpool/pool"
+	"github.com/albertywu/gitpool/repo"
 )
 
 type Daemon struct {
@@ -161,12 +161,19 @@ func (d *Daemon) HandleRepoRemove(name string) ipc.Response {
 }
 
 func (d *Daemon) HandleClaim(req ipc.ClaimRequest) ipc.Response {
-	result, err := d.pool.ClaimWorktree(req.RepoName, req.OutputPath)
+	worktree, err := d.pool.ClaimWorktree(req.RepoName)
 	if err != nil {
 		return ipc.Response{Success: false, Error: err.Error()}
 	}
 
-	return ipc.Response{Success: true, Data: result}
+	// Create the claim response with both ID and path
+	claimResp := ipc.ClaimResponse{
+		WorktreeID: worktree.Name, // Using Name as the identifier (e.g., "my-app-uuid")
+		Path:       worktree.Path,
+	}
+
+	data, _ := json.Marshal(claimResp)
+	return ipc.Response{Success: true, Data: json.RawMessage(data)}
 }
 
 func (d *Daemon) HandleRelease(req ipc.ReleaseRequest) ipc.Response {

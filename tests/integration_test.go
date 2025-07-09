@@ -12,26 +12,26 @@ import (
 
 // TestContext holds test configuration and state
 type TestContext struct {
-	TreefarmBinary string
-	TestDir        string
-	ConfigDir      string
-	WorktreeDir    string
-	TestRepo       string
-	SocketPath     string
-	DaemonCmd      *exec.Cmd
-	t              *testing.T
+	GitpoolBinary string
+	TestDir       string
+	ConfigDir     string
+	WorktreeDir   string
+	TestRepo      string
+	SocketPath    string
+	DaemonCmd     *exec.Cmd
+	t             *testing.T
 }
 
 // SetupTestContext creates a temporary test environment
 func SetupTestContext(t *testing.T) *TestContext {
 	// Create temporary test directory with short name to avoid Unix socket path length limits
-	testDir, err := os.MkdirTemp("", "tf-test-*")
+	testDir, err := os.MkdirTemp("", "gp-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
 	// Set up paths
-	configDir := filepath.Join(testDir, ".treefarm")
+	configDir := filepath.Join(testDir, ".gitpool")
 	worktreeDir := filepath.Join(configDir, "worktrees")
 	testRepo := filepath.Join(testDir, "test-repo")
 	socketPath := filepath.Join(testDir, "daemon.sock")
@@ -40,30 +40,30 @@ func SetupTestContext(t *testing.T) *TestContext {
 	os.MkdirAll(configDir, 0755)
 	os.MkdirAll(worktreeDir, 0755)
 
-	// Build treefarm binary
-	treefarmBinary := filepath.Join(testDir, "treefarm")
+	// Build gitpool binary
+	gitpoolBinary := filepath.Join(testDir, "gitpool")
 
 	// Change to parent directory to build
 	pwd, _ := os.Getwd()
 	parentDir := filepath.Dir(pwd)
 
-	cmd := exec.Command("go", "build", "-o", treefarmBinary, "./cmd/main.go")
+	cmd := exec.Command("go", "build", "-o", gitpoolBinary, "./cmd/main.go")
 	cmd.Dir = parentDir
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("Failed to build treefarm: %v", err)
+		t.Fatalf("Failed to build gitpool: %v", err)
 	}
 
 	// Create test git repository
 	createTestRepo(t, testRepo)
 
 	return &TestContext{
-		TreefarmBinary: treefarmBinary,
-		TestDir:        testDir,
-		ConfigDir:      configDir,
-		WorktreeDir:    worktreeDir,
-		TestRepo:       testRepo,
-		SocketPath:     socketPath,
-		t:              t,
+		GitpoolBinary: gitpoolBinary,
+		TestDir:       testDir,
+		ConfigDir:     configDir,
+		WorktreeDir:   worktreeDir,
+		TestRepo:      testRepo,
+		SocketPath:    socketPath,
+		t:             t,
 	}
 }
 
@@ -109,32 +109,32 @@ func createTestRepo(t *testing.T, repoPath string) {
 	cmd.Run()
 }
 
-// RunTreefarmCommand runs a treefarm command with the test environment
-func (tc *TestContext) RunTreefarmCommand(args ...string) (string, error) {
+// RunGitpoolCommand runs a gitpool command with the test environment
+func (tc *TestContext) RunGitpoolCommand(args ...string) (string, error) {
 	// Set HOME to our test directory so config is found in the right place
-	cmd := exec.Command(tc.TreefarmBinary, args...)
+	cmd := exec.Command(tc.GitpoolBinary, args...)
 	cmd.Env = append(os.Environ(),
 		"HOME="+tc.TestDir,
-		"TREEFARM_CONFIG_DIR="+tc.ConfigDir,
-		"TREEFARM_WORKTREE_DIR="+tc.WorktreeDir,
-		"TREEFARM_SOCKET_PATH="+tc.SocketPath)
+		"GITPOOL_CONFIG_DIR="+tc.ConfigDir,
+		"GITPOOL_WORKTREE_DIR="+tc.WorktreeDir,
+		"GITPOOL_SOCKET_PATH="+tc.SocketPath)
 
 	output, err := cmd.CombinedOutput()
 	return string(output), err
 }
 
-// StartDaemon starts the treefarm daemon for testing
+// StartDaemon starts the gitpool daemon for testing
 func (tc *TestContext) StartDaemon() error {
 	// Start daemon as a subprocess (non-blocking)
-	cmd := exec.Command(tc.TreefarmBinary, "daemon", "start",
+	cmd := exec.Command(tc.GitpoolBinary, "daemon", "start",
 		"--config-dir", tc.ConfigDir,
 		"--worktree-dir", tc.WorktreeDir,
 		"--socket-path", tc.SocketPath)
 	cmd.Env = append(os.Environ(),
 		"HOME="+tc.TestDir,
-		"TREEFARM_CONFIG_DIR="+tc.ConfigDir,
-		"TREEFARM_WORKTREE_DIR="+tc.WorktreeDir,
-		"TREEFARM_SOCKET_PATH="+tc.SocketPath)
+		"GITPOOL_CONFIG_DIR="+tc.ConfigDir,
+		"GITPOOL_WORKTREE_DIR="+tc.WorktreeDir,
+		"GITPOOL_SOCKET_PATH="+tc.SocketPath)
 
 	// Create pipes to capture output for debugging
 	stderr, err := cmd.StderrPipe()
@@ -173,7 +173,7 @@ func (tc *TestContext) StartDaemon() error {
 		}
 
 		// Try to connect to daemon
-		output, err := tc.RunTreefarmCommand("daemon", "status")
+		output, err := tc.RunGitpoolCommand("daemon", "status")
 		if err == nil {
 			return nil // Success!
 		}
@@ -184,14 +184,14 @@ func (tc *TestContext) StartDaemon() error {
 	return fmt.Errorf("daemon failed to start within timeout")
 }
 
-// StopDaemon stops the treefarm daemon
+// StopDaemon stops the gitpool daemon
 func (tc *TestContext) StopDaemon() error {
 	if tc.DaemonCmd == nil {
 		return nil
 	}
 
 	// Try to stop daemon gracefully first
-	tc.RunTreefarmCommand("daemon", "stop")
+	tc.RunGitpoolCommand("daemon", "stop")
 
 	// Give it a moment to shutdown gracefully
 	time.Sleep(1 * time.Second)
@@ -221,7 +221,7 @@ func TestDaemonCommands(t *testing.T) {
 	})
 
 	t.Run("daemon status", func(t *testing.T) {
-		output, err := tc.RunTreefarmCommand("daemon", "status")
+		output, err := tc.RunGitpoolCommand("daemon", "status")
 		if err != nil {
 			t.Fatalf("Daemon status command failed: %v", err)
 		}
@@ -243,7 +243,7 @@ func TestRepoCommands(t *testing.T) {
 	}
 
 	t.Run("repo add", func(t *testing.T) {
-		output, err := tc.RunTreefarmCommand("repo", "add", "test-repo", tc.TestRepo, "--max", "4", "--default-branch", "main")
+		output, err := tc.RunGitpoolCommand("repo", "add", "test-repo", tc.TestRepo, "--max", "4", "--default-branch", "main")
 		if err != nil {
 			t.Fatalf("Failed to add repo: %v\nOutput: %s", err, output)
 		}
@@ -254,7 +254,7 @@ func TestRepoCommands(t *testing.T) {
 	})
 
 	t.Run("repo list", func(t *testing.T) {
-		output, err := tc.RunTreefarmCommand("repo", "list")
+		output, err := tc.RunGitpoolCommand("repo", "list")
 		if err != nil {
 			t.Fatalf("Failed to list repos: %v", err)
 		}
@@ -269,7 +269,7 @@ func TestRepoCommands(t *testing.T) {
 	})
 
 	t.Run("repo remove", func(t *testing.T) {
-		output, err := tc.RunTreefarmCommand("repo", "remove", "test-repo")
+		output, err := tc.RunGitpoolCommand("repo", "remove", "test-repo")
 		if err != nil {
 			t.Fatalf("Failed to remove repo: %v", err)
 		}
@@ -279,7 +279,7 @@ func TestRepoCommands(t *testing.T) {
 		}
 
 		// Verify repo is removed
-		output, err = tc.RunTreefarmCommand("repo", "list")
+		output, err = tc.RunGitpoolCommand("repo", "list")
 		if err != nil {
 			t.Fatalf("Failed to list repos after removal: %v", err)
 		}
@@ -301,7 +301,7 @@ func TestWorktreeCommands(t *testing.T) {
 	}
 
 	// Add repository
-	_, err := tc.RunTreefarmCommand("repo", "add", "test-repo", tc.TestRepo, "--max", "2", "--default-branch", "main")
+	_, err := tc.RunGitpoolCommand("repo", "add", "test-repo", tc.TestRepo, "--max", "2", "--default-branch", "main")
 	if err != nil {
 		t.Fatalf("Failed to add repo: %v", err)
 	}
@@ -312,38 +312,37 @@ func TestWorktreeCommands(t *testing.T) {
 	var worktreeID string
 
 	t.Run("claim worktree", func(t *testing.T) {
-		output, err := tc.RunTreefarmCommand("claim", "--repo", "test-repo")
+		output, err := tc.RunGitpoolCommand("claim", "--repo", "test-repo")
 		if err != nil {
 			t.Fatalf("Failed to claim worktree: %v\nOutput: %s", err, output)
 		}
 
 		output = strings.TrimSpace(output)
-		if !strings.HasPrefix(output, "test-repo-") {
-			t.Errorf("Expected worktree name to start with 'test-repo-', got: %s", output)
+		// Output should be two lines: worktree-id and path
+		lines := strings.Split(output, "\n")
+		if len(lines) != 2 {
+			t.Fatalf("Expected output to contain worktree ID and path on separate lines, got: %s", output)
 		}
 
-		worktreeID = output
-	})
+		worktreeID = lines[0]
+		worktreePath := lines[1]
 
-	t.Run("claim worktree with path", func(t *testing.T) {
-		output, err := tc.RunTreefarmCommand("claim", "--repo", "test-repo", "--output-path")
-		if err != nil {
-			t.Fatalf("Failed to claim worktree with path: %v", err)
+		if !strings.HasPrefix(worktreeID, "test-repo-") {
+			t.Errorf("Expected worktree ID to start with 'test-repo-', got: %s", worktreeID)
 		}
 
-		output = strings.TrimSpace(output)
-		if !strings.Contains(output, "test-repo-") {
-			t.Errorf("Expected path to contain 'test-repo-', got: %s", output)
+		if !strings.Contains(worktreePath, worktreeID) {
+			t.Errorf("Expected path to contain worktree ID, got path: %s, ID: %s", worktreePath, worktreeID)
 		}
 
 		// Verify the path exists
-		if _, err := os.Stat(output); err != nil {
-			t.Errorf("Expected worktree path to exist: %s", output)
+		if _, err := os.Stat(worktreePath); err != nil {
+			t.Errorf("Expected worktree path to exist: %s", worktreePath)
 		}
 	})
 
 	t.Run("pool status", func(t *testing.T) {
-		output, err := tc.RunTreefarmCommand("pool", "status")
+		output, err := tc.RunGitpoolCommand("pool", "status")
 		if err != nil {
 			t.Fatalf("Failed to get pool status: %v", err)
 		}
@@ -363,7 +362,7 @@ func TestWorktreeCommands(t *testing.T) {
 			t.Skip("No worktree ID to release")
 		}
 
-		output, err := tc.RunTreefarmCommand("release", worktreeID)
+		output, err := tc.RunGitpoolCommand("release", worktreeID)
 		if err != nil {
 			t.Fatalf("Failed to release worktree: %v\nOutput: %s", err, output)
 		}
@@ -374,7 +373,7 @@ func TestWorktreeCommands(t *testing.T) {
 	})
 
 	t.Run("pool status after release", func(t *testing.T) {
-		output, err := tc.RunTreefarmCommand("pool", "status")
+		output, err := tc.RunGitpoolCommand("pool", "status")
 		if err != nil {
 			t.Fatalf("Failed to get pool status: %v", err)
 		}
@@ -396,7 +395,7 @@ func TestFullWorkflow(t *testing.T) {
 	}
 
 	// Add repository
-	_, err := tc.RunTreefarmCommand("repo", "add", "workflow-repo", tc.TestRepo, "--max", "3", "--default-branch", "main")
+	_, err := tc.RunGitpoolCommand("repo", "add", "workflow-repo", tc.TestRepo, "--max", "3", "--default-branch", "main")
 	if err != nil {
 		t.Fatalf("Failed to add repo: %v", err)
 	}
@@ -407,7 +406,7 @@ func TestFullWorkflow(t *testing.T) {
 	// Claim multiple worktrees
 	var worktreeIDs []string
 	for i := 0; i < 2; i++ {
-		output, err := tc.RunTreefarmCommand("claim", "--repo", "workflow-repo")
+		output, err := tc.RunGitpoolCommand("claim", "--repo", "workflow-repo")
 		if err != nil {
 			t.Fatalf("Failed to claim worktree %d: %v", i, err)
 		}
@@ -415,7 +414,7 @@ func TestFullWorkflow(t *testing.T) {
 	}
 
 	// Check pool status
-	output, err := tc.RunTreefarmCommand("pool", "status")
+	output, err := tc.RunGitpoolCommand("pool", "status")
 	if err != nil {
 		t.Fatalf("Failed to get pool status: %v", err)
 	}
@@ -426,14 +425,14 @@ func TestFullWorkflow(t *testing.T) {
 
 	// Release worktrees
 	for _, worktreeID := range worktreeIDs {
-		_, err := tc.RunTreefarmCommand("release", worktreeID)
+		_, err := tc.RunGitpoolCommand("release", worktreeID)
 		if err != nil {
 			t.Fatalf("Failed to release worktree %s: %v", worktreeID, err)
 		}
 	}
 
 	// Final pool status check
-	output, err = tc.RunTreefarmCommand("pool", "status")
+	output, err = tc.RunGitpoolCommand("pool", "status")
 	if err != nil {
 		t.Fatalf("Failed to get final pool status: %v", err)
 	}

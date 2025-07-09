@@ -6,16 +6,16 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/uber/treefarm/config"
-	"github.com/uber/treefarm/daemon"
-	"github.com/uber/treefarm/internal"
-	"github.com/uber/treefarm/ipc"
+	"github.com/albertywu/gitpool/config"
+	"github.com/albertywu/gitpool/daemon"
+	"github.com/albertywu/gitpool/internal"
+	"github.com/albertywu/gitpool/ipc"
 )
 
 func NewDaemonCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "daemon",
-		Short: "Manage the treefarm daemon",
+		Short: "Manage the gitpool daemon",
 	}
 
 	cmd.AddCommand(newDaemonStartCmd())
@@ -36,7 +36,7 @@ var (
 func newDaemonStartCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start",
-		Short: "Start the treefarm daemon",
+		Short: "Start the gitpool daemon",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.LoadWithCustomPaths(daemonConfigDir, daemonWorktreeDir, daemonSocketPath)
 			if err != nil {
@@ -136,7 +136,7 @@ func newDaemonStatusCmd() *cobra.Command {
 func newDaemonStopCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stop",
-		Short: "Stop the treefarm daemon",
+		Short: "Stop the gitpool daemon",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.LoadWithCustomPaths(daemonConfigDir, daemonWorktreeDir, daemonSocketPath)
 			if err != nil {

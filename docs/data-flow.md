@@ -49,7 +49,7 @@ Timer Trigger → Check Repository → Fetch Updates → Update Idle Worktrees �
 ## Configuration
 
 ### Global Configuration
-Located in `~/.treefarm/treefarm.yaml`:
+Optional file located at `~/.gitpool/config.yaml`:
 ```yaml
 reconciliation_interval: 1m  # How often reconciler runs
 ```
@@ -64,3 +64,7 @@ repos:
 ```
 
 When unset, repository fetch intervals default to 1 hour.
+
+If no config file is present, all settings use their defaults:
+- `reconciliation_interval`: 1 minute
+- Repository fetch intervals: 1 hour

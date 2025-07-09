@@ -41,8 +41,12 @@ type RepoAddRequest struct {
 }
 
 type ClaimRequest struct {
-	RepoName   string `json:"repo_name"`
-	OutputPath bool   `json:"output_path"`
+	RepoName string `json:"repo_name"`
+}
+
+type ClaimResponse struct {
+	WorktreeID string `json:"worktree_id"`
+	Path       string `json:"path"`
 }
 
 type ReleaseRequest struct {

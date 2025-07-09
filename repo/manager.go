@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/uber/treefarm/db"
-	"github.com/uber/treefarm/models"
+	"github.com/albertywu/gitpool/db"
+	"github.com/albertywu/gitpool/models"
 )
 
 type Manager struct {

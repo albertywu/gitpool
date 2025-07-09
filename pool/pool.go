@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/uber/treefarm/db"
-	"github.com/uber/treefarm/models"
+	"github.com/albertywu/gitpool/db"
+	"github.com/albertywu/gitpool/models"
 )
 
 type Pool struct {
@@ -24,20 +24,20 @@ func NewPool(store *db.Store) *Pool {
 	}
 }
 
-func (p *Pool) ClaimWorktree(repoName string, outputPath bool) (string, error) {
+func (p *Pool) ClaimWorktree(repoName string) (*models.Worktree, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	// Get repository
 	repo, err := p.store.GetRepository(repoName)
 	if err != nil {
-		return "", fmt.Errorf("repository '%s' not found", repoName)
+		return nil, fmt.Errorf("repository '%s' not found", repoName)
 	}
 
 	// Get idle worktrees
 	idleWorktrees, err := p.store.ListIdleWorktreesByRepo(repo.ID)
 	if err != nil {
-		return "", fmt.Errorf("failed to list worktrees: %w", err)
+		return nil, fmt.Errorf("failed to list worktrees: %w", err)
 	}
 
 	if len(idleWorktrees) == 0 {
@@ -50,16 +50,16 @@ func (p *Pool) ClaimWorktree(repoName string, outputPath bool) (string, error) {
 			// In a real implementation, this would signal the reconciler
 			// For now, we'll create one directly
 			if err := p.createWorktree(repo); err != nil {
-				return "", fmt.Errorf("failed to create worktree: %w", err)
+				return nil, fmt.Errorf("failed to create worktree: %w", err)
 			}
 
 			// Get the newly created worktree
 			idleWorktrees, err = p.store.ListIdleWorktreesByRepo(repo.ID)
 			if err != nil || len(idleWorktrees) == 0 {
-				return "", fmt.Errorf("failed to get newly created worktree")
+				return nil, fmt.Errorf("failed to get newly created worktree")
 			}
 		} else {
-			return "", fmt.Errorf("no available worktrees and pool is at capacity")
+			return nil, fmt.Errorf("no available worktrees and pool is at capacity")
 		}
 	}
 
@@ -67,20 +67,16 @@ func (p *Pool) ClaimWorktree(repoName string, outputPath bool) (string, error) {
 	worktree := idleWorktrees[0]
 	claimedWorktree, err := p.allocator.ClaimWorktree(worktree)
 	if err != nil {
-		return "", fmt.Errorf("failed to claim worktree: %w", err)
+		return nil, fmt.Errorf("failed to claim worktree: %w", err)
 	}
 
 	// Update database
 	if err := p.store.UpdateWorktreeStatus(claimedWorktree.ID.String(),
 		claimedWorktree.Status, claimedWorktree.LeasedAt); err != nil {
-		return "", fmt.Errorf("failed to update worktree status: %w", err)
+		return nil, fmt.Errorf("failed to update worktree status: %w", err)
 	}
 
-	if outputPath {
-		return claimedWorktree.Path, nil
-	}
-
-	return claimedWorktree.Name, nil
+	return claimedWorktree, nil
 }
 
 func (p *Pool) ReleaseWorktree(worktreeID string) error {

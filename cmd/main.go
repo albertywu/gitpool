@@ -5,17 +5,17 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/uber/treefarm/cmd/commands"
-	"github.com/uber/treefarm/internal"
+	"github.com/albertywu/gitpool/cmd/commands"
+	"github.com/albertywu/gitpool/internal"
 )
 
 func main() {
 	internal.InitLogger()
 
 	rootCmd := &cobra.Command{
-		Use:   "treefarm",
+		Use:   "gitpool",
 		Short: "Manage a pool of pre-initialized Git worktrees",
-		Long: `treefarm is a CLI + daemon tool for managing a pool of pre-initialized Git worktrees.
+		Long: `gitpool is a CLI + daemon tool for managing a pool of pre-initialized Git worktrees.
 It enables fast, disposable checkouts for builds, tests, and CI pipelines without repeated Git fetches.
 Developers can instantly "claim" worktrees and "release" them back for reuse.`,
 	}

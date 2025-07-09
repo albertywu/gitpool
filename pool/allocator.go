@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/uber/treefarm/config"
-	"github.com/uber/treefarm/models"
+	"github.com/albertywu/gitpool/config"
+	"github.com/albertywu/gitpool/models"
 )
 
 type Allocator struct {

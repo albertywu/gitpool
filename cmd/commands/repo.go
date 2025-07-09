@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/uber/treefarm/config"
-	"github.com/uber/treefarm/internal"
-	"github.com/uber/treefarm/ipc"
-	"github.com/uber/treefarm/models"
+	"github.com/albertywu/gitpool/config"
+	"github.com/albertywu/gitpool/internal"
+	"github.com/albertywu/gitpool/ipc"
+	"github.com/albertywu/gitpool/models"
 )
 
 var (

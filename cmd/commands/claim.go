@@ -1,23 +1,32 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/uber/treefarm/config"
-	"github.com/uber/treefarm/internal"
-	"github.com/uber/treefarm/ipc"
+	"github.com/albertywu/gitpool/config"
+	"github.com/albertywu/gitpool/internal"
+	"github.com/albertywu/gitpool/ipc"
 )
 
 var (
-	claimRepo       string
-	claimOutputPath bool
+	claimRepo string
 )
 
 func NewClaimCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "claim",
 		Short: "Claim a worktree from the pool",
+		Long: `Claim an available worktree from the pool for the specified repository.
+
+Output format (two lines):
+  <worktree-id>
+  <absolute-path>
+
+Example:
+  my-app-a91b6fc1
+  /home/user/.gitpool/worktrees/my-app-a91b6fc1`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if claimRepo == "" {
 				return fmt.Errorf("--repo flag is required")
@@ -30,8 +39,7 @@ func NewClaimCmd() *cobra.Command {
 
 			client := ipc.NewClient(cfg.SocketPath)
 			req := ipc.ClaimRequest{
-				RepoName:   claimRepo,
-				OutputPath: claimOutputPath,
+				RepoName: claimRepo,
 			}
 
 			resp, err := client.Claim(req)
@@ -44,15 +52,20 @@ func NewClaimCmd() *cobra.Command {
 				return fmt.Errorf("claim failed")
 			}
 
-			// Print the result (path or name)
-			fmt.Println(resp.Data)
+			// Parse the response to get both worktree ID and path
+			var claimResp ipc.ClaimResponse
+			if err := json.Unmarshal(resp.Data.(json.RawMessage), &claimResp); err != nil {
+				return fmt.Errorf("failed to parse response: %w", err)
+			}
+
+			// Print worktree ID and path on separate lines
+			fmt.Printf("%s\n%s\n", claimResp.WorktreeID, claimResp.Path)
 
 			return nil
 		},
 	}
 
 	cmd.Flags().StringVar(&claimRepo, "repo", "", "Repository name")
-	cmd.Flags().BoolVar(&claimOutputPath, "output-path", false, "Output full path instead of worktree name")
 	cmd.MarkFlagRequired("repo")
 
 	return cmd

@@ -29,13 +29,13 @@ func Load() (*Config, error) {
 func LoadWithCustomPaths(configDir, worktreeDir, socketPath string) (*Config, error) {
 	// Check environment variables first
 	if configDir == "" {
-		configDir = os.Getenv("TREEFARM_CONFIG_DIR")
+		configDir = os.Getenv("GITPOOL_CONFIG_DIR")
 	}
 	if worktreeDir == "" {
-		worktreeDir = os.Getenv("TREEFARM_WORKTREE_DIR")
+		worktreeDir = os.Getenv("GITPOOL_WORKTREE_DIR")
 	}
 	if socketPath == "" {
-		socketPath = os.Getenv("TREEFARM_SOCKET_PATH")
+		socketPath = os.Getenv("GITPOOL_SOCKET_PATH")
 	}
 
 	// Set up config directory
@@ -43,21 +43,16 @@ func LoadWithCustomPaths(configDir, worktreeDir, socketPath string) (*Config, er
 		configDir = GetConfigDir()
 	}
 
-	viper.SetConfigName("treefarm")
+	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(configDir)
-	viper.AddConfigPath(".")
 
 	// Set defaults
 	viper.SetDefault("reconciliation_interval", "1m")
 	viper.SetDefault("repos", map[string]*RepoConfig{})
 
 	// Read config if exists
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, fmt.Errorf("failed to read config: %w", err)
-		}
-	}
+	_ = viper.ReadInConfig() // Ignore error - config file is optional
 
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
@@ -97,12 +92,12 @@ func (c *Config) GetRepoFetchInterval(repoName string) time.Duration {
 
 // GetWorktreeDir returns the hardcoded worktree directory
 func GetWorktreeDir() string {
-	return filepath.Join(os.Getenv("HOME"), ".treefarm", "worktrees")
+	return filepath.Join(os.Getenv("HOME"), ".gitpool", "worktrees")
 }
 
 // GetConfigDir returns the config directory
 func GetConfigDir() string {
-	return filepath.Join(os.Getenv("HOME"), ".treefarm")
+	return filepath.Join(os.Getenv("HOME"), ".gitpool")
 }
 
 // EnsureWorktreeDir ensures the worktree directory exists

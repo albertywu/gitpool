@@ -1,4 +1,4 @@
-module treefarm-integration-tests
+module gitpool-integration-tests
 
 go 1.21
 

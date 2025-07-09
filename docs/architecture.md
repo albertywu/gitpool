@@ -1,6 +1,6 @@
 # Architecture
 
-Treefarm follows a client-server architecture with persistent state management:
+GitPool follows a client-server architecture with persistent state management:
 
 ## Core Components
 
@@ -18,20 +18,20 @@ Treefarm follows a client-server architecture with persistent state management:
 
 ### IPC (Inter-Process Communication)
 - Unix socket communication between CLI and daemon
-- Located at `~/.treefarm/worktrees/daemon.sock`
+- Located at `~/.gitpool/worktrees/daemon.sock`
 - Enables fast, secure local communication
 - Protocol: JSON-RPC style messages
 
 ### Storage Layer
 - SQLite database for metadata persistence
 - Tracks worktree state, claims, and repository configurations
-- Located at `~/.treefarm/worktrees/treefarm.db`
+- Located at `~/.gitpool/worktrees/gitpool.db`
 - Ensures state survives daemon restarts
 
 ## Worktree Lifecycle
 
 ### Creation
-When you add a repository, treefarm immediately creates all worktrees up to the configured maximum (`--max` flag). Each worktree is:
+When you add a repository, gitpool immediately creates all worktrees up to the configured maximum (`--max` flag). Each worktree is:
 - Created as a Git worktree of the source repository
 - Initialized with the default branch
 - Registered in the database with "idle" status
