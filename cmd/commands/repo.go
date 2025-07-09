@@ -14,7 +14,6 @@ import (
 var (
 	repoMaxWorktrees  int
 	repoDefaultBranch string
-	repoFetchInterval string
 )
 
 func NewRepoCmd() *cobra.Command {
@@ -39,16 +38,6 @@ func newRepoAddCmd() *cobra.Command {
 			name := args[0]
 			path := args[1]
 
-			// Parse fetch interval
-			fetchIntervalMinutes := 10
-			if repoFetchInterval != "" {
-				var minutes int
-				if _, err := fmt.Sscanf(repoFetchInterval, "%dm", &minutes); err != nil {
-					return fmt.Errorf("invalid fetch interval format (use format like '5m')")
-				}
-				fetchIntervalMinutes = minutes
-			}
-
 			cfg, err := config.Load()
 			if err != nil {
 				return fmt.Errorf("failed to load config: %w", err)
@@ -60,7 +49,7 @@ func newRepoAddCmd() *cobra.Command {
 				Path:          path,
 				MaxWorktrees:  repoMaxWorktrees,
 				DefaultBranch: repoDefaultBranch,
-				FetchInterval: fetchIntervalMinutes,
+				FetchInterval: 60, // Default value, will be ignored by daemon
 			}
 
 			resp, err := client.RepoAdd(req)
@@ -80,7 +69,6 @@ func newRepoAddCmd() *cobra.Command {
 
 	cmd.Flags().IntVar(&repoMaxWorktrees, "max", 8, "Maximum number of worktrees")
 	cmd.Flags().StringVar(&repoDefaultBranch, "default-branch", "main", "Default branch to checkout")
-	cmd.Flags().StringVar(&repoFetchInterval, "fetch-interval", "10m", "Fetch interval (e.g., 5m, 10m)")
 
 	return cmd
 }
@@ -122,9 +110,11 @@ func newRepoListCmd() *cobra.Command {
 			w := internal.NewTabWriter()
 			fmt.Fprintln(w, "NAME\tPATH\tMAX\tDEFAULT BRANCH\tFETCH INTERVAL")
 			for _, repo := range repos {
-				fmt.Fprintf(w, "%s\t%s\t%d\t%s\t%dm\n",
+				// Get fetch interval from config
+				fetchInterval := cfg.GetRepoFetchInterval(repo.Name)
+				fmt.Fprintf(w, "%s\t%s\t%d\t%s\t%v\n",
 					repo.Name, repo.Path, repo.MaxWorktrees,
-					repo.DefaultBranch, repo.FetchInterval)
+					repo.DefaultBranch, fetchInterval)
 			}
 			w.Flush()
 

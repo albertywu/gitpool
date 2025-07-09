@@ -6,25 +6,31 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/uber/treefarm/config"
 	"github.com/uber/treefarm/db"
 	"github.com/uber/treefarm/models"
 	"github.com/uber/treefarm/pool"
 )
 
 type Reconciler struct {
-	store    *db.Store
-	pool     *pool.Pool
-	interval time.Duration
-	stopCh   chan struct{}
-	wg       sync.WaitGroup
+	store     *db.Store
+	pool      *pool.Pool
+	config    *config.Config
+	interval  time.Duration
+	stopCh    chan struct{}
+	wg        sync.WaitGroup
+	lastFetch map[string]time.Time
+	mu        sync.RWMutex
 }
 
-func NewReconciler(store *db.Store, pool *pool.Pool, interval time.Duration) *Reconciler {
+func NewReconciler(store *db.Store, pool *pool.Pool, cfg *config.Config, interval time.Duration) *Reconciler {
 	return &Reconciler{
-		store:    store,
-		pool:     pool,
-		interval: interval,
-		stopCh:   make(chan struct{}),
+		store:     store,
+		pool:      pool,
+		config:    cfg,
+		interval:  interval,
+		stopCh:    make(chan struct{}),
+		lastFetch: make(map[string]time.Time),
 	}
 }
 
@@ -75,9 +81,15 @@ func (r *Reconciler) reconcile() {
 	}
 
 	for _, repo := range repos {
+		// Get the fetch interval from config (defaults to 1h if not set)
+		fetchInterval := r.config.GetRepoFetchInterval(repo.Name)
+
 		// Check if it's time to fetch for this repo
-		lastFetch := time.Now().Add(-time.Duration(repo.FetchInterval) * time.Minute)
-		if time.Since(lastFetch) >= time.Duration(repo.FetchInterval)*time.Minute {
+		r.mu.RLock()
+		lastFetch, exists := r.lastFetch[repo.Name]
+		r.mu.RUnlock()
+
+		if !exists || time.Since(lastFetch) >= fetchInterval {
 			log.Printf("[INFO] Processing repository '%s'", repo.Name)
 
 			run, err := r.pool.ReconcileWorktrees(repo)
@@ -85,6 +97,11 @@ func (r *Reconciler) reconcile() {
 				log.Printf("[ERROR] Failed to reconcile worktrees for '%s': %v", repo.Name, err)
 				continue
 			}
+
+			// Update last fetch time
+			r.mu.Lock()
+			r.lastFetch[repo.Name] = time.Now()
+			r.mu.Unlock()
 
 			totalRun.Created += run.Created
 			totalRun.Cleaned += run.Cleaned

@@ -9,9 +9,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Config struct {
+type RepoConfig struct {
 	FetchInterval time.Duration `mapstructure:"fetch_interval"`
-	SocketPath    string        `mapstructure:"socket_path"`
+}
+
+type Config struct {
+	ReconciliationInterval time.Duration          `mapstructure:"reconciliation_interval"`
+	SocketPath             string                 `mapstructure:"socket_path"`
+	Repos                  map[string]*RepoConfig `mapstructure:"repos"`
 }
 
 func Load() (*Config, error) {
@@ -21,7 +26,8 @@ func Load() (*Config, error) {
 	viper.AddConfigPath(".")
 
 	// Set defaults
-	viper.SetDefault("fetch_interval", "15m")
+	viper.SetDefault("reconciliation_interval", "1m")
+	viper.SetDefault("repos", map[string]*RepoConfig{})
 
 	// Read config if exists
 	if err := viper.ReadInConfig(); err != nil {
@@ -35,12 +41,25 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
+	// Initialize repos map if nil
+	if cfg.Repos == nil {
+		cfg.Repos = make(map[string]*RepoConfig)
+	}
+
 	// Set socket path if not configured
 	if cfg.SocketPath == "" {
 		cfg.SocketPath = filepath.Join(GetWorktreeDir(), "daemon.sock")
 	}
 
 	return &cfg, nil
+}
+
+// GetRepoFetchInterval returns the fetch interval for a repository, or 1h if not configured
+func (c *Config) GetRepoFetchInterval(repoName string) time.Duration {
+	if repoConfig, exists := c.Repos[repoName]; exists {
+		return repoConfig.FetchInterval
+	}
+	return time.Hour // Default to 1 hour
 }
 
 // GetWorktreeDir returns the hardcoded worktree directory

@@ -22,12 +22,12 @@ go install github.com/uber/treefarm/cmd@latest
 
 1. Start the daemon:
 ```bash
-treefarm daemon start --fetch-interval 15m
+treefarm daemon start
 ```
 
 2. Add a repository:
 ```bash
-treefarm repo add my-app ~/repos/my-app --max 8 --default-branch develop --fetch-interval 5m
+treefarm repo add my-app ~/repos/my-app --max 8 --default-branch develop
 ```
 
 3. Claim a worktree:
@@ -70,11 +70,50 @@ treefarm pool status
 
 ## Configuration
 
-Treefarm looks for configuration in `~/.treefarm/treefarm.yaml`. Example:
+Treefarm looks for configuration in `~/.treefarm/treefarm.yaml`. 
+
+Configure the global reconciliation interval (how often the daemon checks for repository updates):
 
 ```yaml
-fetch_interval: 15m
+reconciliation_interval: 1m  # Default: 1m (optional)
 ```
+
+Configure per-repository fetch intervals:
+
+```yaml
+repos:
+  git-spice:
+    fetch_interval: 15m
+  my-app:
+    fetch_interval: 5m
+```
+
+When unset, repository fetch intervals default to 1 hour.
+
+## Reconciliation
+
+The reconciler runs continuously in the background to keep worktrees updated and maintain pool capacity. It operates on two interval levels:
+
+### Global Reconciliation Interval (1m default)
+The reconciler wakes up every minute (configurable via `reconciliation_interval` in config) and checks all registered repositories.
+
+### Per-Repository Fetch Interval (1h default)
+Each repository has its own fetch interval (configurable via `repos.<name>.fetch_interval` in config). During each reconciler run, only repositories that haven't been updated recently are processed.
+
+### What Happens During Reconciliation
+
+For each repository that's due for an update:
+
+1. **Fetch main repository**: Runs `git fetch --all --prune` on the original repository to get latest changes
+2. **Update idle worktrees**: Updates only **unclaimed** worktrees to the latest default branch
+3. **Maintain capacity**: Creates new worktrees if under the configured maximum
+4. **Clean up**: Removes corrupted worktrees and replaces them
+
+### Safety
+
+- **In-use worktrees are never touched** - Only idle (unclaimed) worktrees are updated
+- **Your active work is protected** - Claimed worktrees remain exactly as you left them
+- **Automatic cleanup** - Released worktrees are reset and cleaned before being returned to the pool
 
 ## Storage
 

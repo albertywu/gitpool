@@ -44,7 +44,7 @@ func New(cfg *config.Config) (*Daemon, error) {
 	// Initialize components
 	repoManager := repo.NewManager(store)
 	worktreePool := pool.NewPool(store)
-	reconciler := NewReconciler(store, worktreePool, cfg.FetchInterval)
+	reconciler := NewReconciler(store, worktreePool, cfg, cfg.ReconciliationInterval)
 
 	d := &Daemon{
 		config:      cfg,
@@ -69,7 +69,7 @@ func New(cfg *config.Config) (*Daemon, error) {
 func (d *Daemon) Start() error {
 	log.Printf("[INFO] Starting treefarm daemon")
 	log.Printf("[INFO] Using worktree directory: %s", config.GetWorktreeDir())
-	log.Printf("[INFO] Global fetch interval: %s", d.config.FetchInterval)
+	log.Printf("[INFO] Global reconciliation interval: %s", d.config.ReconciliationInterval)
 	log.Printf("[INFO] Listening on %s", d.config.SocketPath)
 
 	// Start reconciler
@@ -127,8 +127,9 @@ func (d *Daemon) HandleRepoAdd(req ipc.RepoAddRequest) ipc.Response {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
+	// FetchInterval is now managed by config, so we ignore the request value
 	repo, err := d.repoManager.AddRepository(req.Name, req.Path, req.DefaultBranch,
-		req.MaxWorktrees, req.FetchInterval)
+		req.MaxWorktrees, 60) // Default value, will be overridden by config
 	if err != nil {
 		return ipc.Response{Success: false, Error: err.Error()}
 	}

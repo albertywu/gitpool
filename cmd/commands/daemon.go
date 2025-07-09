@@ -12,10 +12,6 @@ import (
 	"github.com/uber/treefarm/ipc"
 )
 
-var (
-	daemonFetchInterval string
-)
-
 func NewDaemonCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "daemon",
@@ -38,15 +34,6 @@ func newDaemonStartCmd() *cobra.Command {
 				return fmt.Errorf("failed to load config: %w", err)
 			}
 
-			// Override with flags if provided
-			if daemonFetchInterval != "" {
-				interval, err := time.ParseDuration(daemonFetchInterval)
-				if err != nil {
-					return fmt.Errorf("invalid fetch interval: %w", err)
-				}
-				cfg.FetchInterval = interval
-			}
-
 			// Check if daemon is already running
 			if daemon.CheckDaemonRunning(cfg.SocketPath) {
 				internal.PrintError("Another instance is already running (socket lock exists)")
@@ -62,8 +49,6 @@ func newDaemonStartCmd() *cobra.Command {
 			return d.Start()
 		},
 	}
-
-	cmd.Flags().StringVar(&daemonFetchInterval, "fetch-interval", "", "Global fetch interval (e.g., 15m)")
 
 	return cmd
 }
