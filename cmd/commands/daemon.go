@@ -13,7 +13,6 @@ import (
 )
 
 var (
-	daemonWorkDir       string
 	daemonFetchInterval string
 )
 
@@ -40,9 +39,6 @@ func newDaemonStartCmd() *cobra.Command {
 			}
 
 			// Override with flags if provided
-			if daemonWorkDir != "" {
-				cfg.WorkDir = daemonWorkDir
-			}
 			if daemonFetchInterval != "" {
 				interval, err := time.ParseDuration(daemonFetchInterval)
 				if err != nil {
@@ -67,7 +63,6 @@ func newDaemonStartCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&daemonWorkDir, "workdir", "", "Working directory for worktrees")
 	cmd.Flags().StringVar(&daemonFetchInterval, "fetch-interval", "", "Global fetch interval (e.g., 15m)")
 
 	return cmd

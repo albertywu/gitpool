@@ -10,6 +10,7 @@ Treefarm is a CLI + daemon tool for managing a pool of pre-initialized Git workt
 - Background daemon with automatic reconciliation
 - Support for multiple repositories with different configurations
 - SQLite-based metadata persistence
+- Worktrees stored in `~/.treefarm/worktrees`
 
 ## Installation
 
@@ -21,7 +22,7 @@ go install github.com/uber/treefarm/cmd@latest
 
 1. Start the daemon:
 ```bash
-treefarm daemon start --workdir /data/wtpool --fetch-interval 15m
+treefarm daemon start --fetch-interval 15m
 ```
 
 2. Add a repository:
@@ -72,13 +73,22 @@ treefarm pool status
 Treefarm looks for configuration in `~/.treefarm/treefarm.yaml`. Example:
 
 ```yaml
-work_dir: /data/wtpool
 fetch_interval: 15m
 ```
+
+## Storage
+
+- **Worktrees**: Stored in `~/.treefarm/worktrees/` (not configurable)
+- **Database**: SQLite database at `~/.treefarm/worktrees/treefarm.db`
+- **Socket**: IPC socket at `~/.treefarm/worktrees/daemon.sock`
 
 ## Architecture
 
 - **Daemon**: Background service managing the worktree pool
 - **Reconciler**: Ensures pool capacity and updates worktrees
 - **IPC**: Unix socket communication between CLI and daemon
-- **Storage**: SQLite database for metadata persistence
+- **Storage**: SQLite database for metadata persistence in `~/.treefarm/worktrees`
+
+### Worktree Allocation
+
+When you add a repository, treefarm immediately creates all worktrees up to the configured maximum (`--max` flag). The reconciler continuously ensures the pool stays at capacity by creating new worktrees as needed and cleaning up corrupted ones.

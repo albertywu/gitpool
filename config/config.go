@@ -10,7 +10,6 @@ import (
 )
 
 type Config struct {
-	WorkDir       string        `mapstructure:"work_dir"`
 	FetchInterval time.Duration `mapstructure:"fetch_interval"`
 	SocketPath    string        `mapstructure:"socket_path"`
 }
@@ -22,7 +21,6 @@ func Load() (*Config, error) {
 	viper.AddConfigPath(".")
 
 	// Set defaults
-	viper.SetDefault("work_dir", filepath.Join(os.Getenv("HOME"), ".treefarm", "workdir"))
 	viper.SetDefault("fetch_interval", "15m")
 
 	// Read config if exists
@@ -39,15 +37,26 @@ func Load() (*Config, error) {
 
 	// Set socket path if not configured
 	if cfg.SocketPath == "" {
-		cfg.SocketPath = filepath.Join(cfg.WorkDir, "daemon.sock")
+		cfg.SocketPath = filepath.Join(GetWorktreeDir(), "daemon.sock")
 	}
 
 	return &cfg, nil
 }
 
-func (c *Config) EnsureWorkDir() error {
-	if err := os.MkdirAll(c.WorkDir, 0755); err != nil {
-		return fmt.Errorf("failed to create work directory: %w", err)
+// GetWorktreeDir returns the hardcoded worktree directory
+func GetWorktreeDir() string {
+	return filepath.Join(os.Getenv("HOME"), ".treefarm", "worktrees")
+}
+
+// GetConfigDir returns the config directory
+func GetConfigDir() string {
+	return filepath.Join(os.Getenv("HOME"), ".treefarm")
+}
+
+// EnsureWorktreeDir ensures the worktree directory exists
+func EnsureWorktreeDir() error {
+	if err := os.MkdirAll(GetWorktreeDir(), 0755); err != nil {
+		return fmt.Errorf("failed to create worktree directory: %w", err)
 	}
 	return nil
 }

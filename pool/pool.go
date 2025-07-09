@@ -17,10 +17,10 @@ type Pool struct {
 	mu        sync.Mutex
 }
 
-func NewPool(store *db.Store, workDir string) *Pool {
+func NewPool(store *db.Store) *Pool {
 	return &Pool{
 		store:     store,
-		allocator: NewAllocator(workDir),
+		allocator: NewAllocator(),
 	}
 }
 
@@ -243,9 +243,6 @@ func (p *Pool) ReconcileWorktrees(repo *models.Repository) (*models.ReconcilerRu
 
 	if currentCount < targetCount {
 		toCreate := targetCount - currentCount
-		if toCreate > 3 {
-			toCreate = 3 // Limit creation per run
-		}
 
 		for i := 0; i < toCreate; i++ {
 			if err := p.createWorktree(repo); err != nil {

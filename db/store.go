@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/uber/treefarm/config"
 	"github.com/uber/treefarm/models"
 )
 
@@ -15,8 +16,8 @@ type Store struct {
 	db *sql.DB
 }
 
-func NewStore(workDir string) (*Store, error) {
-	dbPath := filepath.Join(workDir, "treefarm.db")
+func NewStore() (*Store, error) {
+	dbPath := filepath.Join(config.GetWorktreeDir(), "treefarm.db")
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)

@@ -31,19 +31,19 @@ type Daemon struct {
 
 func New(cfg *config.Config) (*Daemon, error) {
 	// Ensure work directory exists
-	if err := cfg.EnsureWorkDir(); err != nil {
-		return nil, fmt.Errorf("failed to create work directory: %w", err)
+	if err := config.EnsureWorktreeDir(); err != nil {
+		return nil, fmt.Errorf("failed to create worktree directory: %w", err)
 	}
 
 	// Initialize database
-	store, err := db.NewStore(cfg.WorkDir)
+	store, err := db.NewStore()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
 
 	// Initialize components
-	repoManager := repo.NewManager(store, cfg.WorkDir)
-	worktreePool := pool.NewPool(store, cfg.WorkDir)
+	repoManager := repo.NewManager(store)
+	worktreePool := pool.NewPool(store)
 	reconciler := NewReconciler(store, worktreePool, cfg.FetchInterval)
 
 	d := &Daemon{
@@ -68,7 +68,7 @@ func New(cfg *config.Config) (*Daemon, error) {
 
 func (d *Daemon) Start() error {
 	log.Printf("[INFO] Starting treefarm daemon")
-	log.Printf("[INFO] Using workdir: %s", d.config.WorkDir)
+	log.Printf("[INFO] Using worktree directory: %s", config.GetWorktreeDir())
 	log.Printf("[INFO] Global fetch interval: %s", d.config.FetchInterval)
 	log.Printf("[INFO] Listening on %s", d.config.SocketPath)
 
@@ -133,8 +133,8 @@ func (d *Daemon) HandleRepoAdd(req ipc.RepoAddRequest) ipc.Response {
 		return ipc.Response{Success: false, Error: err.Error()}
 	}
 
-	// Create initial worktrees
-	d.pool.CreateInitialWorktrees(repo, 2)
+	// Create initial worktrees up to the repository's max
+	d.pool.CreateInitialWorktrees(repo, repo.MaxWorktrees)
 
 	return ipc.Response{Success: true, Data: repo}
 }

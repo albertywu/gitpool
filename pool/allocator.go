@@ -9,15 +9,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/uber/treefarm/config"
 	"github.com/uber/treefarm/models"
 )
 
 type Allocator struct {
-	workDir string
 }
 
-func NewAllocator(workDir string) *Allocator {
-	return &Allocator{workDir: workDir}
+func NewAllocator() *Allocator {
+	return &Allocator{}
 }
 
 func (a *Allocator) CreateWorktree(repo *models.Repository) (*models.Worktree, error) {
@@ -26,7 +26,7 @@ func (a *Allocator) CreateWorktree(repo *models.Repository) (*models.Worktree, e
 	worktreeName := fmt.Sprintf("%s-%s", repo.Name, worktreeID.String())
 
 	// Create repository subdirectory if needed
-	repoWorkDir := filepath.Join(a.workDir, repo.Name)
+	repoWorkDir := filepath.Join(config.GetWorktreeDir(), repo.Name)
 	if err := os.MkdirAll(repoWorkDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create repo work directory: %w", err)
 	}
@@ -34,7 +34,7 @@ func (a *Allocator) CreateWorktree(repo *models.Repository) (*models.Worktree, e
 	worktreePath := filepath.Join(repoWorkDir, worktreeName)
 
 	// Create git worktree
-	cmd := exec.Command("git", "-C", repo.Path, "worktree", "add", worktreePath, repo.DefaultBranch)
+	cmd := exec.Command("git", "-C", repo.Path, "worktree", "add", "--detach", worktreePath, repo.DefaultBranch)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("failed to create worktree: %w\nOutput: %s", err, string(output))
 	}

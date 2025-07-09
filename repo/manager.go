@@ -13,14 +13,12 @@ import (
 type Manager struct {
 	store     *db.Store
 	validator *Validator
-	workDir   string
 }
 
-func NewManager(store *db.Store, workDir string) *Manager {
+func NewManager(store *db.Store) *Manager {
 	return &Manager{
 		store:     store,
 		validator: NewValidator(),
-		workDir:   workDir,
 	}
 }
 
