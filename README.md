@@ -1,16 +1,18 @@
 # Treefarm
 
-Treefarm is a CLI + daemon tool for managing a pool of pre-initialized Git worktrees. It enables fast, disposable checkouts for builds, tests, and CI pipelines without repeated Git fetches. Developers can instantly "claim" worktrees and "release" them back for reuse.
+Treefarm is a CLI + daemon tool for managing a pool of pre-initialized Git worktrees. It enables fast, disposable checkouts for builds, tests, and CI pipelines without repeated Git fetches.
 
-## Features
+## What is Treefarm?
 
-- Pre-initialized worktree pool management
-- Fast worktree allocation without git fetch overhead
-- Automatic cleanup and reset of released worktrees
-- Background daemon with automatic reconciliation
-- Support for multiple repositories with different configurations
-- SQLite-based metadata persistence
-- Worktrees stored in `~/.treefarm/worktrees`
+Treefarm maintains a pool of pre-initialized Git worktrees that can be instantly claimed and released. Instead of waiting for `git clone` or `git fetch` operations, developers and CI systems get immediate access to ready-to-use worktrees.
+
+## Why Use Treefarm?
+
+- **Instant checkouts**: No waiting for git operations - worktrees are pre-fetched and ready
+- **Perfect for CI/CD**: Dramatically speed up build and test pipelines 
+- **Resource efficient**: Worktrees share Git objects with the source repository
+- **Safe isolation**: Each claimed worktree is independent and protected from updates
+- **Automatic maintenance**: Background daemon keeps worktrees fresh and pool at capacity
 
 ## Installation
 
@@ -68,68 +70,54 @@ treefarm pool status
 - `treefarm release <worktree-id>` - Return a worktree to the pool
 - `treefarm pool status` - Show pool usage statistics
 
+## Examples
+
+### CI/CD Pipeline Integration
+```bash
+# In your CI script
+WORKTREE=$(treefarm claim --repo my-app --output-path)
+cd "$WORKTREE"
+make test
+treefarm release $(basename "$WORKTREE")
+```
+
+### Development Workflow
+```bash
+# Quick experimentation without affecting main workspace
+WORKTREE_ID=$(treefarm claim --repo my-project)
+cd ~/.treefarm/worktrees/$WORKTREE_ID
+# ... make changes, test ideas ...
+treefarm release $WORKTREE_ID
+```
+
+### Parallel Testing
+```bash
+# Run tests in parallel across multiple worktrees
+for i in {1..4}; do
+  WORKTREE=$(treefarm claim --repo my-app --output-path)
+  (cd "$WORKTREE" && make test-suite-$i) &
+done
+wait
+```
+
 ## Configuration
 
-Treefarm looks for configuration in `~/.treefarm/treefarm.yaml`. 
-
-Configure the global reconciliation interval (how often the daemon checks for repository updates):
+Configure treefarm via `~/.treefarm/treefarm.yaml`:
 
 ```yaml
-reconciliation_interval: 1m  # Default: 1m (optional)
-```
+# How often the daemon checks repositories (default: 1m)
+reconciliation_interval: 1m
 
-Configure per-repository fetch intervals:
-
-```yaml
+# Per-repository fetch intervals
 repos:
-  git-spice:
-    fetch_interval: 15m
   my-app:
-    fetch_interval: 5m
+    fetch_interval: 5m    # Check for updates every 5 minutes
+  legacy-service:
+    fetch_interval: 30m   # Less frequent updates for stable repos
 ```
 
-When unset, repository fetch intervals default to 1 hour.
+## Documentation
 
-## Reconciliation
-
-The reconciler runs continuously in the background to keep worktrees updated and maintain pool capacity. It operates on two interval levels:
-
-### Global Reconciliation Interval (1m default)
-The reconciler wakes up every minute (configurable via `reconciliation_interval` in config) and checks all registered repositories.
-
-### Per-Repository Fetch Interval (1h default)
-Each repository has its own fetch interval (configurable via `repos.<name>.fetch_interval` in config). During each reconciler run, only repositories that haven't been updated recently are processed.
-
-**Last fetch times are persisted in the database**, so daemon restarts won't trigger unnecessary fetches - the system remembers when each repository was last updated.
-
-### What Happens During Reconciliation
-
-For each repository that's due for an update:
-
-1. **Fetch main repository**: Runs `git fetch --all --prune` on the original repository to get latest changes
-2. **Update idle worktrees**: Updates only **unclaimed** worktrees to the latest default branch
-3. **Maintain capacity**: Creates new worktrees if under the configured maximum
-4. **Clean up**: Removes corrupted worktrees and replaces them
-
-### Safety
-
-- **In-use worktrees are never touched** - Only idle (unclaimed) worktrees are updated
-- **Your active work is protected** - Claimed worktrees remain exactly as you left them
-- **Automatic cleanup** - Released worktrees are reset and cleaned before being returned to the pool
-
-## Storage
-
-- **Worktrees**: Stored in `~/.treefarm/worktrees/` (not configurable)
-- **Database**: SQLite database at `~/.treefarm/worktrees/treefarm.db`
-- **Socket**: IPC socket at `~/.treefarm/worktrees/daemon.sock`
-
-## Architecture
-
-- **Daemon**: Background service managing the worktree pool
-- **Reconciler**: Ensures pool capacity and updates worktrees
-- **IPC**: Unix socket communication between CLI and daemon
-- **Storage**: SQLite database for metadata persistence in `~/.treefarm/worktrees`
-
-### Worktree Allocation
-
-When you add a repository, treefarm immediately creates all worktrees up to the configured maximum (`--max` flag). The reconciler continuously ensures the pool stays at capacity by creating new worktrees as needed and cleaning up corrupted ones.
+- [Architecture](docs/architecture.md) - System design and components
+- [Data Flow](docs/data-flow.md) - Reconciliation and update processes  
+- [Storage](docs/storage.md) - File layout and database schema
