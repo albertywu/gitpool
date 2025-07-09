@@ -38,7 +38,7 @@ func newRepoAddCmd() *cobra.Command {
 			name := args[0]
 			path := args[1]
 
-			cfg, err := config.Load()
+			cfg, err := config.LoadWithCustomPaths("", "", "")
 			if err != nil {
 				return fmt.Errorf("failed to load config: %w", err)
 			}
@@ -78,7 +78,7 @@ func newRepoListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all registered repositories",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load()
+			cfg, err := config.LoadWithCustomPaths("", "", "")
 			if err != nil {
 				return fmt.Errorf("failed to load config: %w", err)
 			}
@@ -131,7 +131,7 @@ func newRepoRemoveCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 
-			cfg, err := config.Load()
+			cfg, err := config.LoadWithCustomPaths("", "", "")
 			if err != nil {
 				return fmt.Errorf("failed to load config: %w", err)
 			}

@@ -29,7 +29,7 @@ func newPoolStatusCmd() *cobra.Command {
 		Use:   "status",
 		Short: "Show pool usage statistics",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load()
+			cfg, err := config.LoadWithCustomPaths("", "", "")
 			if err != nil {
 				return fmt.Errorf("failed to load config: %w", err)
 			}

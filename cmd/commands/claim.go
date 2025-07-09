@@ -23,7 +23,7 @@ func NewClaimCmd() *cobra.Command {
 				return fmt.Errorf("--repo flag is required")
 			}
 
-			cfg, err := config.Load()
+			cfg, err := config.LoadWithCustomPaths("", "", "")
 			if err != nil {
 				return fmt.Errorf("failed to load config: %w", err)
 			}

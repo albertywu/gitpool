@@ -31,12 +31,12 @@ type Daemon struct {
 
 func New(cfg *config.Config) (*Daemon, error) {
 	// Ensure work directory exists
-	if err := config.EnsureWorktreeDir(); err != nil {
+	if err := cfg.EnsureWorktreeDir(); err != nil {
 		return nil, fmt.Errorf("failed to create worktree directory: %w", err)
 	}
 
 	// Initialize database
-	store, err := db.NewStore()
+	store, err := db.NewStoreWithPath(cfg.WorktreeDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
@@ -68,7 +68,7 @@ func New(cfg *config.Config) (*Daemon, error) {
 
 func (d *Daemon) Start() error {
 	log.Printf("[INFO] Starting treefarm daemon")
-	log.Printf("[INFO] Using worktree directory: %s", config.GetWorktreeDir())
+	log.Printf("[INFO] Using worktree directory: %s", d.config.WorktreeDir)
 	log.Printf("[INFO] Global reconciliation interval: %s", d.config.ReconciliationInterval)
 	log.Printf("[INFO] Listening on %s", d.config.SocketPath)
 

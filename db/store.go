@@ -17,7 +17,11 @@ type Store struct {
 }
 
 func NewStore() (*Store, error) {
-	dbPath := filepath.Join(config.GetWorktreeDir(), "treefarm.db")
+	return NewStoreWithPath(config.GetWorktreeDir())
+}
+
+func NewStoreWithPath(worktreeDir string) (*Store, error) {
+	dbPath := filepath.Join(worktreeDir, "treefarm.db")
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)

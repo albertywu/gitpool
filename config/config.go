@@ -17,12 +17,35 @@ type Config struct {
 	ReconciliationInterval time.Duration          `mapstructure:"reconciliation_interval"`
 	SocketPath             string                 `mapstructure:"socket_path"`
 	Repos                  map[string]*RepoConfig `mapstructure:"repos"`
+	// Custom paths (can be set via CLI flags)
+	ConfigDir   string `mapstructure:"-"`
+	WorktreeDir string `mapstructure:"-"`
 }
 
 func Load() (*Config, error) {
+	return LoadWithCustomPaths("", "", "")
+}
+
+func LoadWithCustomPaths(configDir, worktreeDir, socketPath string) (*Config, error) {
+	// Check environment variables first
+	if configDir == "" {
+		configDir = os.Getenv("TREEFARM_CONFIG_DIR")
+	}
+	if worktreeDir == "" {
+		worktreeDir = os.Getenv("TREEFARM_WORKTREE_DIR")
+	}
+	if socketPath == "" {
+		socketPath = os.Getenv("TREEFARM_SOCKET_PATH")
+	}
+
+	// Set up config directory
+	if configDir == "" {
+		configDir = GetConfigDir()
+	}
+
 	viper.SetConfigName("treefarm")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("$HOME/.treefarm")
+	viper.AddConfigPath(configDir)
 	viper.AddConfigPath(".")
 
 	// Set defaults
@@ -46,9 +69,19 @@ func Load() (*Config, error) {
 		cfg.Repos = make(map[string]*RepoConfig)
 	}
 
+	// Set custom paths
+	cfg.ConfigDir = configDir
+	if worktreeDir != "" {
+		cfg.WorktreeDir = worktreeDir
+	} else {
+		cfg.WorktreeDir = GetWorktreeDir()
+	}
+
 	// Set socket path if not configured
-	if cfg.SocketPath == "" {
-		cfg.SocketPath = filepath.Join(GetWorktreeDir(), "daemon.sock")
+	if socketPath != "" {
+		cfg.SocketPath = socketPath
+	} else if cfg.SocketPath == "" {
+		cfg.SocketPath = filepath.Join(cfg.WorktreeDir, "daemon.sock")
 	}
 
 	return &cfg, nil
@@ -75,6 +108,14 @@ func GetConfigDir() string {
 // EnsureWorktreeDir ensures the worktree directory exists
 func EnsureWorktreeDir() error {
 	if err := os.MkdirAll(GetWorktreeDir(), 0755); err != nil {
+		return fmt.Errorf("failed to create worktree directory: %w", err)
+	}
+	return nil
+}
+
+// EnsureWorktreeDirForConfig ensures the worktree directory exists for a config
+func (c *Config) EnsureWorktreeDir() error {
+	if err := os.MkdirAll(c.WorktreeDir, 0755); err != nil {
 		return fmt.Errorf("failed to create worktree directory: %w", err)
 	}
 	return nil
