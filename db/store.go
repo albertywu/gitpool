@@ -65,10 +65,17 @@ func (s *Store) migrate() error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_worktrees_repo_id ON worktrees(repo_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_worktrees_status ON worktrees(status)`,
+		// Add last_fetch_time column to repositories table (safe if column already exists)
+		`ALTER TABLE repositories ADD COLUMN last_fetch_time TIMESTAMP`,
 	}
 
 	for _, query := range queries {
 		if _, err := s.db.Exec(query); err != nil {
+			// Ignore "duplicate column name" error for ALTER TABLE statements
+			if query[:11] == "ALTER TABLE" && (err.Error() == "duplicate column name: last_fetch_time" ||
+				err.Error() == "SQL logic error: duplicate column name: last_fetch_time") {
+				continue
+			}
 			return fmt.Errorf("migration failed: %w", err)
 		}
 	}
@@ -78,22 +85,22 @@ func (s *Store) migrate() error {
 
 // Repository methods
 func (s *Store) CreateRepository(repo *models.Repository) error {
-	query := `INSERT INTO repositories (id, name, path, max_worktrees, default_branch, fetch_interval, created_at)
-			  VALUES (?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO repositories (id, name, path, max_worktrees, default_branch, fetch_interval, last_fetch_time, created_at)
+			  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 	_, err := s.db.Exec(query, repo.ID.String(), repo.Name, repo.Path, repo.MaxWorktrees,
-		repo.DefaultBranch, repo.FetchInterval, repo.CreatedAt)
+		repo.DefaultBranch, repo.FetchInterval, repo.LastFetchTime, repo.CreatedAt)
 	return err
 }
 
 func (s *Store) GetRepository(name string) (*models.Repository, error) {
-	query := `SELECT id, name, path, max_worktrees, default_branch, fetch_interval, created_at 
+	query := `SELECT id, name, path, max_worktrees, default_branch, fetch_interval, last_fetch_time, created_at 
 			  FROM repositories WHERE name = ?`
 	row := s.db.QueryRow(query, name)
 
 	var repo models.Repository
 	var idStr string
 	err := row.Scan(&idStr, &repo.Name, &repo.Path, &repo.MaxWorktrees,
-		&repo.DefaultBranch, &repo.FetchInterval, &repo.CreatedAt)
+		&repo.DefaultBranch, &repo.FetchInterval, &repo.LastFetchTime, &repo.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +114,7 @@ func (s *Store) GetRepository(name string) (*models.Repository, error) {
 }
 
 func (s *Store) ListRepositories() ([]*models.Repository, error) {
-	query := `SELECT id, name, path, max_worktrees, default_branch, fetch_interval, created_at 
+	query := `SELECT id, name, path, max_worktrees, default_branch, fetch_interval, last_fetch_time, created_at 
 			  FROM repositories ORDER BY name`
 	rows, err := s.db.Query(query)
 	if err != nil {
@@ -120,7 +127,7 @@ func (s *Store) ListRepositories() ([]*models.Repository, error) {
 		var repo models.Repository
 		var idStr string
 		err := rows.Scan(&idStr, &repo.Name, &repo.Path, &repo.MaxWorktrees,
-			&repo.DefaultBranch, &repo.FetchInterval, &repo.CreatedAt)
+			&repo.DefaultBranch, &repo.FetchInterval, &repo.LastFetchTime, &repo.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -139,6 +146,12 @@ func (s *Store) ListRepositories() ([]*models.Repository, error) {
 func (s *Store) DeleteRepository(name string) error {
 	query := `DELETE FROM repositories WHERE name = ?`
 	_, err := s.db.Exec(query, name)
+	return err
+}
+
+func (s *Store) UpdateRepositoryLastFetch(name string, lastFetchTime time.Time) error {
+	query := `UPDATE repositories SET last_fetch_time = ? WHERE name = ?`
+	_, err := s.db.Exec(query, lastFetchTime, name)
 	return err
 }
 

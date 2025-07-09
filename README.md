@@ -100,6 +100,8 @@ The reconciler wakes up every minute (configurable via `reconciliation_interval`
 ### Per-Repository Fetch Interval (1h default)
 Each repository has its own fetch interval (configurable via `repos.<name>.fetch_interval` in config). During each reconciler run, only repositories that haven't been updated recently are processed.
 
+**Last fetch times are persisted in the database**, so daemon restarts won't trigger unnecessary fetches - the system remembers when each repository was last updated.
+
 ### What Happens During Reconciliation
 
 For each repository that's due for an update:

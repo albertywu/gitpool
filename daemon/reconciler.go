@@ -13,24 +13,21 @@ import (
 )
 
 type Reconciler struct {
-	store     *db.Store
-	pool      *pool.Pool
-	config    *config.Config
-	interval  time.Duration
-	stopCh    chan struct{}
-	wg        sync.WaitGroup
-	lastFetch map[string]time.Time
-	mu        sync.RWMutex
+	store    *db.Store
+	pool     *pool.Pool
+	config   *config.Config
+	interval time.Duration
+	stopCh   chan struct{}
+	wg       sync.WaitGroup
 }
 
 func NewReconciler(store *db.Store, pool *pool.Pool, cfg *config.Config, interval time.Duration) *Reconciler {
 	return &Reconciler{
-		store:     store,
-		pool:      pool,
-		config:    cfg,
-		interval:  interval,
-		stopCh:    make(chan struct{}),
-		lastFetch: make(map[string]time.Time),
+		store:    store,
+		pool:     pool,
+		config:   cfg,
+		interval: interval,
+		stopCh:   make(chan struct{}),
 	}
 }
 
@@ -85,11 +82,7 @@ func (r *Reconciler) reconcile() {
 		fetchInterval := r.config.GetRepoFetchInterval(repo.Name)
 
 		// Check if it's time to fetch for this repo
-		r.mu.RLock()
-		lastFetch, exists := r.lastFetch[repo.Name]
-		r.mu.RUnlock()
-
-		if !exists || time.Since(lastFetch) >= fetchInterval {
+		if repo.LastFetchTime == nil || time.Since(*repo.LastFetchTime) >= fetchInterval {
 			log.Printf("[INFO] Processing repository '%s'", repo.Name)
 
 			run, err := r.pool.ReconcileWorktrees(repo)
@@ -99,9 +92,9 @@ func (r *Reconciler) reconcile() {
 			}
 
 			// Update last fetch time
-			r.mu.Lock()
-			r.lastFetch[repo.Name] = time.Now()
-			r.mu.Unlock()
+			if err := r.store.UpdateRepositoryLastFetch(repo.Name, time.Now()); err != nil {
+				log.Printf("[ERROR] Failed to update last fetch time for '%s': %v", repo.Name, err)
+			}
 
 			totalRun.Created += run.Created
 			totalRun.Cleaned += run.Cleaned
