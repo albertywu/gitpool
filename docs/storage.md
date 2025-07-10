@@ -5,8 +5,8 @@
 All gitpool data is stored under `~/.gitpool/`:
 
 - **Worktrees**: `~/.gitpool/worktrees/` (not configurable)
-  - Each worktree is stored as: `~/.gitpool/worktrees/<repo-name>-<uuid>/`
-  - Example: `~/.gitpool/worktrees/my-app-a91b6fc1-b837-4f76-93ef-37e4f5e37b31/`
+  - Each worktree is stored as: `~/.gitpool/worktrees/<repo-name>/<uuid>/`
+  - Example: `~/.gitpool/worktrees/my-app/a91b6fc1-b837-4f76-93ef-37e4f5e37b31/`
 
 - **Database**: `~/.gitpool/worktrees/gitpool.db`
   - SQLite database containing all metadata
@@ -36,7 +36,8 @@ The SQLite database tracks:
 - Worktree ID (UUID)
 - Repository name
 - Worktree path
-- Status (idle/in-use)
+- Status (idle/in-use/corrupt)
+- Branch name (when claimed)
 - Created timestamp
 - Last used timestamp
 

@@ -25,12 +25,13 @@ For each repository that's due for an update:
 
 ### Claim Flow
 ```
-CLI Client → IPC Socket → Daemon → Database Query → Find Idle Worktree → Mark as In-Use → Return Path
+CLI Client (with branch) → IPC Socket → Daemon → Validate Branch Name → Check Branch Uniqueness → 
+Database Query → Find Idle Worktree → Mark as In-Use + Set Branch → Return Path
 ```
 
 ### Release Flow
 ```
-CLI Client → IPC Socket → Daemon → Database Update → Mark as Idle → Background Cleanup Task
+CLI Client → IPC Socket → Daemon → Database Update → Mark as Idle + Clear Branch → Background Cleanup Task
 ```
 
 ### Reconciliation Flow

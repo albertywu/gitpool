@@ -23,7 +23,7 @@ func NewAllocator() *Allocator {
 func (a *Allocator) CreateWorktree(repo *models.Repository) (*models.Worktree, error) {
 	// Generate unique worktree name
 	worktreeID := uuid.New()
-	worktreeName := fmt.Sprintf("%s-%s", repo.Name, worktreeID.String())
+	worktreeName := worktreeID.String()
 
 	// Create repository subdirectory if needed
 	repoWorkDir := filepath.Join(config.GetWorktreeDir(), repo.Name)

@@ -58,6 +58,7 @@ func (s *Store) migrate() error {
 			path TEXT NOT NULL,
 			status TEXT NOT NULL,
 			leased_at TIMESTAMP,
+			branch TEXT,
 			created_at TIMESTAMP NOT NULL,
 			FOREIGN KEY (repo_id) REFERENCES repositories(id) ON DELETE CASCADE
 		)`,
@@ -71,13 +72,18 @@ func (s *Store) migrate() error {
 		`CREATE INDEX IF NOT EXISTS idx_worktrees_status ON worktrees(status)`,
 		// Add last_fetch_time column to repositories table (safe if column already exists)
 		`ALTER TABLE repositories ADD COLUMN last_fetch_time TIMESTAMP`,
+		// Add branch column to worktrees table (safe if column already exists)
+		`ALTER TABLE worktrees ADD COLUMN branch TEXT`,
 	}
 
 	for _, query := range queries {
 		if _, err := s.db.Exec(query); err != nil {
 			// Ignore "duplicate column name" error for ALTER TABLE statements
-			if query[:11] == "ALTER TABLE" && (err.Error() == "duplicate column name: last_fetch_time" ||
-				err.Error() == "SQL logic error: duplicate column name: last_fetch_time") {
+			if query[:11] == "ALTER TABLE" && 
+				(err.Error() == "duplicate column name: last_fetch_time" ||
+				 err.Error() == "SQL logic error: duplicate column name: last_fetch_time" ||
+				 err.Error() == "duplicate column name: branch" ||
+				 err.Error() == "SQL logic error: duplicate column name: branch") {
 				continue
 			}
 			return fmt.Errorf("migration failed: %w", err)
@@ -161,22 +167,22 @@ func (s *Store) UpdateRepositoryLastFetch(name string, lastFetchTime time.Time) 
 
 // Worktree methods
 func (s *Store) CreateWorktree(worktree *models.Worktree) error {
-	query := `INSERT INTO worktrees (id, repo_id, name, path, status, leased_at, created_at)
-			  VALUES (?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO worktrees (id, repo_id, name, path, status, leased_at, branch, created_at)
+			  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 	_, err := s.db.Exec(query, worktree.ID.String(), worktree.RepoID.String(), worktree.Name,
-		worktree.Path, worktree.Status, worktree.LeasedAt, worktree.CreatedAt)
+		worktree.Path, worktree.Status, worktree.LeasedAt, worktree.Branch, worktree.CreatedAt)
 	return err
 }
 
 func (s *Store) GetWorktree(id string) (*models.Worktree, error) {
-	query := `SELECT id, repo_id, name, path, status, leased_at, created_at 
+	query := `SELECT id, repo_id, name, path, status, leased_at, branch, created_at 
 			  FROM worktrees WHERE id = ?`
 	row := s.db.QueryRow(query, id)
 
 	var worktree models.Worktree
 	var idStr, repoIDStr string
 	err := row.Scan(&idStr, &repoIDStr, &worktree.Name, &worktree.Path,
-		&worktree.Status, &worktree.LeasedAt, &worktree.CreatedAt)
+		&worktree.Status, &worktree.LeasedAt, &worktree.Branch, &worktree.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -188,14 +194,14 @@ func (s *Store) GetWorktree(id string) (*models.Worktree, error) {
 }
 
 func (s *Store) GetWorktreeByName(name string) (*models.Worktree, error) {
-	query := `SELECT id, repo_id, name, path, status, leased_at, created_at 
+	query := `SELECT id, repo_id, name, path, status, leased_at, branch, created_at 
 			  FROM worktrees WHERE name = ?`
 	row := s.db.QueryRow(query, name)
 
 	var worktree models.Worktree
 	var idStr, repoIDStr string
 	err := row.Scan(&idStr, &repoIDStr, &worktree.Name, &worktree.Path,
-		&worktree.Status, &worktree.LeasedAt, &worktree.CreatedAt)
+		&worktree.Status, &worktree.LeasedAt, &worktree.Branch, &worktree.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +213,7 @@ func (s *Store) GetWorktreeByName(name string) (*models.Worktree, error) {
 }
 
 func (s *Store) ListWorktreesByRepo(repoID uuid.UUID) ([]*models.Worktree, error) {
-	query := `SELECT id, repo_id, name, path, status, leased_at, created_at 
+	query := `SELECT id, repo_id, name, path, status, leased_at, branch, created_at 
 			  FROM worktrees WHERE repo_id = ?`
 	rows, err := s.db.Query(query, repoID.String())
 	if err != nil {
@@ -219,7 +225,7 @@ func (s *Store) ListWorktreesByRepo(repoID uuid.UUID) ([]*models.Worktree, error
 }
 
 func (s *Store) ListIdleWorktreesByRepo(repoID uuid.UUID) ([]*models.Worktree, error) {
-	query := `SELECT id, repo_id, name, path, status, leased_at, created_at 
+	query := `SELECT id, repo_id, name, path, status, leased_at, branch, created_at 
 			  FROM worktrees WHERE repo_id = ? AND status = ?`
 	rows, err := s.db.Query(query, repoID.String(), models.WorktreeStatusIdle)
 	if err != nil {
@@ -236,10 +242,76 @@ func (s *Store) UpdateWorktreeStatus(id string, status models.WorktreeStatus, le
 	return err
 }
 
+func (s *Store) UpdateWorktreeStatusAndBranch(id string, status models.WorktreeStatus, leasedAt *time.Time, branch *string) error {
+	query := `UPDATE worktrees SET status = ?, leased_at = ?, branch = ? WHERE id = ?`
+	_, err := s.db.Exec(query, status, leasedAt, branch, id)
+	return err
+}
+
+func (s *Store) IsBranchInUseForRepo(repoID uuid.UUID, branch string) (bool, error) {
+	query := `SELECT COUNT(*) FROM worktrees WHERE repo_id = ? AND branch = ? AND status = ?`
+	var count int
+	err := s.db.QueryRow(query, repoID.String(), branch, models.WorktreeStatusInUse).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 func (s *Store) DeleteWorktree(id string) error {
 	query := `DELETE FROM worktrees WHERE id = ?`
 	_, err := s.db.Exec(query, id)
 	return err
+}
+
+// ListAllWorktreesWithRepos returns all worktrees with their repository information
+func (s *Store) ListAllWorktreesWithRepos() ([]*models.WorktreeDetail, error) {
+	query := `
+		SELECT 
+			w.id, w.repo_id, w.name, w.path, w.status, w.leased_at, w.branch, w.created_at,
+			r.id, r.name, r.path, r.max_worktrees, r.default_branch, r.last_fetch_time, 
+			r.fetch_interval, r.created_at
+		FROM worktrees w
+		JOIN repositories r ON w.repo_id = r.id
+		ORDER BY 
+			CASE WHEN w.status = 'in-use' THEN 0 ELSE 1 END,  -- Claimed first
+			w.created_at DESC,  -- Newest first
+			r.name
+	`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var details []*models.WorktreeDetail
+	for rows.Next() {
+		var detail models.WorktreeDetail
+		var worktree models.Worktree
+		var repo models.Repository
+		var wIDStr, wRepoIDStr, rIDStr string
+		
+		err := rows.Scan(
+			&wIDStr, &wRepoIDStr, &worktree.Name, &worktree.Path,
+			&worktree.Status, &worktree.LeasedAt, &worktree.Branch, &worktree.CreatedAt,
+			&rIDStr, &repo.Name, &repo.Path, &repo.MaxWorktrees,
+			&repo.DefaultBranch, &repo.LastFetchTime, &repo.FetchInterval,
+			&repo.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		worktree.ID, _ = uuid.Parse(wIDStr)
+		worktree.RepoID, _ = uuid.Parse(wRepoIDStr)
+		repo.ID, _ = uuid.Parse(rIDStr)
+		
+		detail.Worktree = &worktree
+		detail.Repository = &repo
+		details = append(details, &detail)
+	}
+
+	return details, rows.Err()
 }
 
 func (s *Store) CountWorktreesByStatus(repoID uuid.UUID) (map[models.WorktreeStatus]int, error) {
@@ -292,7 +364,7 @@ func (s *Store) scanWorktrees(rows *sql.Rows) ([]*models.Worktree, error) {
 		var worktree models.Worktree
 		var idStr, repoIDStr string
 		err := rows.Scan(&idStr, &repoIDStr, &worktree.Name, &worktree.Path,
-			&worktree.Status, &worktree.LeasedAt, &worktree.CreatedAt)
+			&worktree.Status, &worktree.LeasedAt, &worktree.Branch, &worktree.CreatedAt)
 		if err != nil {
 			return nil, err
 		}

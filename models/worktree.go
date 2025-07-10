@@ -21,6 +21,7 @@ type Worktree struct {
 	Path      string         `db:"path"`
 	Status    WorktreeStatus `db:"status"`
 	LeasedAt  *time.Time     `db:"leased_at"`
+	Branch    *string        `db:"branch"`
 	CreatedAt time.Time      `db:"created_at"`
 }
 

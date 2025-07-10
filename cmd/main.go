@@ -20,12 +20,17 @@ It enables fast, disposable checkouts for builds, tests, and CI pipelines withou
 Developers can instantly "claim" worktrees and "release" them back for reuse.`,
 	}
 
-	// Add subcommands
-	rootCmd.AddCommand(commands.NewDaemonCmd())
-	rootCmd.AddCommand(commands.NewRepoCmd())
+	// Add simplified top-level commands
+	rootCmd.AddCommand(commands.NewStartCmd())
+	rootCmd.AddCommand(commands.NewStopCmd())
+	rootCmd.AddCommand(commands.NewStatusCmd())
+	rootCmd.AddCommand(commands.NewAddCmd())
+	rootCmd.AddCommand(commands.NewRemoveCmd())
 	rootCmd.AddCommand(commands.NewClaimCmd())
 	rootCmd.AddCommand(commands.NewReleaseCmd())
-	rootCmd.AddCommand(commands.NewPoolCmd())
+	
+	// Keep list command for repositories
+	rootCmd.AddCommand(commands.NewListCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)

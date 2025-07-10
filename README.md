@@ -24,57 +24,51 @@ go install github.com/albertywu/gitpool/cmd@latest
 
 1. Start the daemon:
 ```bash
-gitpool daemon start
+gitpool start
 ```
 
 2. Add a repository:
 ```bash
-gitpool repo add my-app ~/repos/my-app --max 8 --default-branch develop
+gitpool add my-app ~/repos/my-app --max 8 --default-branch develop
 ```
 
 3. Claim a worktree:
 ```bash
-gitpool claim --repo my-app
+gitpool claim my-app --branch feature-xyz
 # Output (two lines):
-# my-app-a91b6fc1
-# /home/user/.gitpool/worktrees/my-app-a91b6fc1
+# a91b6fc1-1234-5678-90ab-cdef12345678
+# /home/user/.gitpool/worktrees/my-app/a91b6fc1-1234-5678-90ab-cdef12345678
 ```
 
-4. Release a worktree:
+4. Release a worktree when done:
 ```bash
-gitpool release my-app-a91b6fc1-b837-4f76-93ef-37e4f5e37b31
+gitpool release a91b6fc1-1234-5678-90ab-cdef12345678
 ```
 
 5. Check pool status:
 ```bash
-gitpool pool status
+gitpool status
 ```
 
 ## Commands
 
-### Daemon Management
+- `gitpool start` - Start the background daemon
+- `gitpool stop` - Stop the daemon (or use Ctrl+C)
+- `gitpool status` - Show pool usage statistics
 
-- `gitpool daemon start` - Start the background daemon
-- `gitpool daemon status` - Check daemon status
+- `gitpool add <name> <path>` - Register a Git repository
+- `gitpool remove <name>` - Remove a repository
+- `gitpool list` - List all worktrees with detailed status
 
-### Repository Management
-
-- `gitpool repo add <name> <path>` - Register a Git repository
-- `gitpool repo list` - List all registered repositories
-- `gitpool repo remove <name>` - Remove a repository
-
-### Worktree Operations
-
-- `gitpool claim --repo <name>` - Claim an available worktree
+- `gitpool claim <name> --branch <name>` - Claim an available worktree with a unique branch name
 - `gitpool release <worktree-id>` - Return a worktree to the pool
-- `gitpool pool status` - Show pool usage statistics
 
 ## Examples
 
 ### CI/CD Pipeline Integration
 ```bash
 # In your CI script
-OUTPUT=$(gitpool claim --repo my-app)
+OUTPUT=$(gitpool claim my-app --branch "ci-run-${BUILD_ID}")
 WORKTREE_ID=$(echo "$OUTPUT" | head -n1)
 WORKTREE_PATH=$(echo "$OUTPUT" | tail -n1)
 
@@ -86,7 +80,7 @@ gitpool release $WORKTREE_ID
 ### Development Workflow
 ```bash
 # Quick experimentation without affecting main workspace
-OUTPUT=$(gitpool claim --repo my-project)
+OUTPUT=$(gitpool claim my-project --branch experiment-feature)
 WORKTREE_ID=$(echo "$OUTPUT" | head -n1)
 WORKTREE_PATH=$(echo "$OUTPUT" | tail -n1)
 
@@ -99,11 +93,32 @@ gitpool release $WORKTREE_ID
 ```bash
 # Run tests in parallel across multiple worktrees
 for i in {1..4}; do
-  OUTPUT=$(gitpool claim --repo my-app)
+  OUTPUT=$(gitpool claim my-app --branch "test-suite-$i")
   WORKTREE_PATH=$(echo "$OUTPUT" | tail -n1)
   (cd "$WORKTREE_PATH" && make test-suite-$i) &
 done
 wait
+```
+
+## Branch Management
+
+GitPool requires a unique branch name when claiming a workspace:
+
+- **Branch names must be unique** within a repository - no two active workspaces can use the same branch
+- **Branch validation** ensures names follow Git conventions (no spaces, special characters, etc.)
+- **Automatic cleanup** - branch associations are cleared when workspaces are released
+
+The `gitpool list` command shows:
+- **Claimed workspaces**: Display the branch name in yellow as a clickable link
+- **Unclaimed workspaces**: Display "UNCLAIMED" in gray as a clickable link
+- All links open the workspace directory when clicked (Cmd/Ctrl+click in supported terminals)
+
+Example output:
+```
+ID                                    WORKSPACE       REPO     STATUS    MAX  BRANCH    FETCH
+────────────────────────────────────  ─────────────   ──────   ────────  ───  ────────  ──────
+a91b6fc1-1234-5678-90ab-cdef12345678  feature-xyz     my-app   IN-USE    8    develop   1h
+b82c7de2-2345-6789-01bc-def234567890  UNCLAIMED       my-app   IDLE      8    develop   1h
 ```
 
 ## Configuration

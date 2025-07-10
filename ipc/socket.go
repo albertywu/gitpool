@@ -10,15 +10,16 @@ import (
 type MessageType string
 
 const (
-	MessageTypeRepoAdd      MessageType = "repo_add"
-	MessageTypeRepoList     MessageType = "repo_list"
-	MessageTypeRepoRemove   MessageType = "repo_remove"
-	MessageTypeClaim        MessageType = "claim"
-	MessageTypeRelease      MessageType = "release"
-	MessageTypePoolStatus   MessageType = "pool_status"
-	MessageTypeDaemonStatus MessageType = "daemon_status"
-	MessageTypeResponse     MessageType = "response"
-	MessageTypeError        MessageType = "error"
+	MessageTypeRepoAdd        MessageType = "repo_add"
+	MessageTypeRepoList       MessageType = "repo_list"
+	MessageTypeRepoRemove     MessageType = "repo_remove"
+	MessageTypeClaim          MessageType = "claim"
+	MessageTypeRelease        MessageType = "release"
+	MessageTypePoolStatus     MessageType = "pool_status"
+	MessageTypeDaemonStatus   MessageType = "daemon_status"
+	MessageTypeWorktreeList   MessageType = "worktree_list"
+	MessageTypeResponse       MessageType = "response"
+	MessageTypeError          MessageType = "error"
 )
 
 type Message struct {
@@ -42,6 +43,7 @@ type RepoAddRequest struct {
 
 type ClaimRequest struct {
 	RepoName string `json:"repo_name"`
+	Branch   string `json:"branch"`
 }
 
 type ClaimResponse struct {
@@ -71,6 +73,7 @@ type Handler interface {
 	HandleRelease(req ReleaseRequest) Response
 	HandlePoolStatus(req PoolStatusRequest) Response
 	HandleDaemonStatus() Response
+	HandleWorktreeList() Response
 }
 
 func NewServer(socketPath string, handler Handler) (*Server, error) {
@@ -173,6 +176,9 @@ func (s *Server) handleConnection(conn net.Conn) {
 	case MessageTypeDaemonStatus:
 		response = s.handler.HandleDaemonStatus()
 
+	case MessageTypeWorktreeList:
+		response = s.handler.HandleWorktreeList()
+
 	default:
 		response = Response{Success: false, Error: "unknown message type"}
 	}
@@ -241,4 +247,8 @@ func (c *Client) PoolStatus(req PoolStatusRequest) (*Response, error) {
 
 func (c *Client) DaemonStatus() (*Response, error) {
 	return c.SendMessage(Message{Type: MessageTypeDaemonStatus})
+}
+
+func (c *Client) WorktreeList() (*Response, error) {
+	return c.SendMessage(Message{Type: MessageTypeWorktreeList})
 }

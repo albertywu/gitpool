@@ -161,7 +161,7 @@ func (d *Daemon) HandleRepoRemove(name string) ipc.Response {
 }
 
 func (d *Daemon) HandleClaim(req ipc.ClaimRequest) ipc.Response {
-	worktree, err := d.pool.ClaimWorktree(req.RepoName)
+	worktree, err := d.pool.ClaimWorktree(req.RepoName, req.Branch)
 	if err != nil {
 		return ipc.Response{Success: false, Error: err.Error()}
 	}
@@ -223,6 +223,15 @@ func (d *Daemon) HandleDaemonStatus() ipc.Response {
 
 	data, _ := json.Marshal(statusMap)
 	return ipc.Response{Success: true, Data: json.RawMessage(data)}
+}
+
+func (d *Daemon) HandleWorktreeList() ipc.Response {
+	details, err := d.store.ListAllWorktreesWithRepos()
+	if err != nil {
+		return ipc.Response{Success: false, Error: err.Error()}
+	}
+
+	return ipc.Response{Success: true, Data: details}
 }
 
 func CheckDaemonRunning(socketPath string) bool {

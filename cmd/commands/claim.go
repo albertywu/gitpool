@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/albertywu/gitpool/config"
@@ -10,26 +11,39 @@ import (
 	"github.com/albertywu/gitpool/ipc"
 )
 
-var (
-	claimRepo string
-)
-
 func NewClaimCmd() *cobra.Command {
+	var branch string
+	
 	cmd := &cobra.Command{
-		Use:   "claim",
+		Use:   "claim <repo-name> --branch <branch-name>",
 		Short: "Claim a worktree from the pool",
 		Long: `Claim an available worktree from the pool for the specified repository.
+
+The --branch flag is required and must be a valid git branch name.
+Branch names must be unique within the repository's workspaces.
 
 Output format (two lines):
   <worktree-id>
   <absolute-path>
 
 Example:
-  my-app-a91b6fc1
-  /home/user/.gitpool/worktrees/my-app-a91b6fc1`,
+  gitpool claim my-app --branch feature-xyz
+  
+Output:
+  a91b6fc1-4322-4b2f-8c1a-123456789abc
+  /home/user/.gitpool/worktrees/my-app/a91b6fc1-4322-4b2f-8c1a-123456789abc`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if claimRepo == "" {
-				return fmt.Errorf("--repo flag is required")
+			repoName := args[0]
+			
+			// Validate branch flag is provided
+			if branch == "" {
+				return fmt.Errorf("--branch flag is required")
+			}
+			
+			// Validate branch name
+			if err := validateBranchName(branch); err != nil {
+				return fmt.Errorf("invalid branch name: %w", err)
 			}
 
 			cfg, err := config.LoadWithCustomPaths("", "", "")
@@ -39,7 +53,8 @@ Example:
 
 			client := ipc.NewClient(cfg.SocketPath)
 			req := ipc.ClaimRequest{
-				RepoName: claimRepo,
+				RepoName: repoName,
+				Branch:   branch,
 			}
 
 			resp, err := client.Claim(req)
@@ -53,8 +68,14 @@ Example:
 			}
 
 			// Parse the response to get both worktree ID and path
+			// First, convert the response data to JSON
+			jsonData, err := json.Marshal(resp.Data)
+			if err != nil {
+				return fmt.Errorf("failed to marshal response: %w", err)
+			}
+			
 			var claimResp ipc.ClaimResponse
-			if err := json.Unmarshal(resp.Data.(json.RawMessage), &claimResp); err != nil {
+			if err := json.Unmarshal(jsonData, &claimResp); err != nil {
 				return fmt.Errorf("failed to parse response: %w", err)
 			}
 
@@ -64,9 +85,44 @@ Example:
 			return nil
 		},
 	}
-
-	cmd.Flags().StringVar(&claimRepo, "repo", "", "Repository name")
-	cmd.MarkFlagRequired("repo")
+	
+	cmd.Flags().StringVar(&branch, "branch", "", "Branch name for the workspace (required)")
+	cmd.MarkFlagRequired("branch")
 
 	return cmd
+}
+
+// validateBranchName checks if a branch name is valid according to git rules
+func validateBranchName(branch string) error {
+	// Basic git branch name validation rules
+	if branch == "" {
+		return fmt.Errorf("branch name cannot be empty")
+	}
+	
+	// Check for invalid characters
+	invalidChars := []string{" ", "..", "~", "^", ":", "?", "*", "[", "\\", "@{"}
+	for _, char := range invalidChars {
+		if strings.Contains(branch, char) {
+			return fmt.Errorf("branch name contains invalid character: %s", char)
+		}
+	}
+	
+	// Check for invalid patterns
+	if branch[0] == '.' || branch[0] == '-' {
+		return fmt.Errorf("branch name cannot start with '.' or '-'")
+	}
+	
+	if branch[len(branch)-1] == '.' || branch[len(branch)-1] == '/' {
+		return fmt.Errorf("branch name cannot end with '.' or '/'")
+	}
+	
+	if branch == "@" {
+		return fmt.Errorf("branch name cannot be '@'")
+	}
+	
+	if strings.Contains(branch, "//") {
+		return fmt.Errorf("branch name cannot contain consecutive slashes")
+	}
+	
+	return nil
 }

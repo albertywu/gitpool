@@ -24,7 +24,7 @@ func NewPool(store *db.Store) *Pool {
 	}
 }
 
-func (p *Pool) ClaimWorktree(repoName string) (*models.Worktree, error) {
+func (p *Pool) ClaimWorktree(repoName string, branch string) (*models.Worktree, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -32,6 +32,15 @@ func (p *Pool) ClaimWorktree(repoName string) (*models.Worktree, error) {
 	repo, err := p.store.GetRepository(repoName)
 	if err != nil {
 		return nil, fmt.Errorf("repository '%s' not found", repoName)
+	}
+	
+	// Check if branch is already in use
+	inUse, err := p.store.IsBranchInUseForRepo(repo.ID, branch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check branch availability: %w", err)
+	}
+	if inUse {
+		return nil, fmt.Errorf("branch '%s' is already in use by another workspace in this repository", branch)
 	}
 
 	// Get idle worktrees
@@ -70,9 +79,12 @@ func (p *Pool) ClaimWorktree(repoName string) (*models.Worktree, error) {
 		return nil, fmt.Errorf("failed to claim worktree: %w", err)
 	}
 
-	// Update database
-	if err := p.store.UpdateWorktreeStatus(claimedWorktree.ID.String(),
-		claimedWorktree.Status, claimedWorktree.LeasedAt); err != nil {
+	// Set the branch on the claimed worktree
+	claimedWorktree.Branch = &branch
+	
+	// Update database with status and branch
+	if err := p.store.UpdateWorktreeStatusAndBranch(claimedWorktree.ID.String(),
+		claimedWorktree.Status, claimedWorktree.LeasedAt, claimedWorktree.Branch); err != nil {
 		return nil, fmt.Errorf("failed to update worktree status: %w", err)
 	}
 
@@ -105,9 +117,12 @@ func (p *Pool) ReleaseWorktree(worktreeID string) error {
 		return fmt.Errorf("failed to release worktree: %w", err)
 	}
 
+	// Clear the branch when releasing
+	releasedWorktree.Branch = nil
+	
 	// Update database
-	if err := p.store.UpdateWorktreeStatus(releasedWorktree.ID.String(),
-		releasedWorktree.Status, releasedWorktree.LeasedAt); err != nil {
+	if err := p.store.UpdateWorktreeStatusAndBranch(releasedWorktree.ID.String(),
+		releasedWorktree.Status, releasedWorktree.LeasedAt, releasedWorktree.Branch); err != nil {
 		return fmt.Errorf("failed to update worktree status: %w", err)
 	}
 
