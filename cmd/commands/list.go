@@ -66,7 +66,7 @@ func NewListCmd() *cobra.Command {
 
 			// Print table header
 			w := internal.NewTabWriter()
-			fmt.Fprintf(w, "%s%sID\tWORKSPACE\tREPO\tSTATUS\tMAX\tBRANCH\tLAST FETCH%s\n", 
+			fmt.Fprintf(w, "%s%sID\tWORKSPACE\tREPO\tSTATUS\tMAX\tBRANCH\tLAST_SYNC%s\n", 
 				colorBold, colorGray, colorReset)
 			
 			// Print separator

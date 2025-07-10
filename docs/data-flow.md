@@ -17,7 +17,7 @@ Each repository has its own fetch interval (configurable via `repos.<n>.fetch_in
 For each repository that's due for an update:
 
 1. **Fetch main repository**: Runs `git fetch --all --prune` on the original repository to get latest changes
-2. **Update idle worktrees**: Updates only **unclaimed** worktrees to the latest default branch
+2. **Update idle worktrees**: Resets only **unclaimed** worktrees to the latest commit SHA (maintains detached HEAD state)
 3. **Maintain capacity**: Creates new worktrees if under the configured maximum
 4. **Clean up**: Removes corrupted worktrees and replaces them
 

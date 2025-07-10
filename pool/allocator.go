@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -100,15 +101,22 @@ func (a *Allocator) UpdateWorktree(repo *models.Repository, worktree *models.Wor
 		return fmt.Errorf("failed to clean worktree: %w", err)
 	}
 
-	// Pull latest changes
-	cmd := exec.Command("git", "-C", worktree.Path, "pull", "origin", repo.DefaultBranch)
-	if err := cmd.Run(); err != nil {
-		// If pull fails, try to reset to origin
-		cmd = exec.Command("git", "-C", worktree.Path, "reset", "--hard", fmt.Sprintf("origin/%s", repo.DefaultBranch))
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("failed to update worktree: %w", err)
-		}
+	// Get the latest commit SHA for the default branch
+	cmd := exec.Command("git", "-C", repo.Path, "rev-parse", fmt.Sprintf("origin/%s", repo.DefaultBranch))
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to get latest commit SHA: %w", err)
 	}
+	
+	latestSHA := strings.TrimSpace(string(output))
+	
+	// Reset worktree to the latest commit (maintains detached HEAD state)
+	cmd = exec.Command("git", "-C", worktree.Path, "reset", "--hard", latestSHA)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to update worktree to %s: %w\nOutput: %s", latestSHA, err, string(output))
+	}
+	
+	log.Printf("[INFO] Updated worktree %s to commit %s", worktree.Name, latestSHA[:7])
 
 	return nil
 }
