@@ -60,25 +60,132 @@ func NewListCmd() *cobra.Command {
 				return nil
 			}
 
+			// Calculate column widths based on data
+			// Start with header lengths as minimum
+			idWidth := len("ID")
+			workspaceWidth := len("WORKSPACE")
+			repoWidth := len("REPO")
+			statusWidth := len("STATUS")
+			maxWidth := len("MAX")
+			branchWidth := len("BRANCH")
+			lastSyncWidth := len("LAST_SYNC")
+			
+			// Find maximum widths based on actual data
+			for _, detail := range details {
+				wt := detail.Worktree
+				repo := detail.Repository
+				
+				// ID column
+				if len(wt.Name) > idWidth {
+					idWidth = len(wt.Name)
+				}
+				
+				// Workspace column
+				workspaceLen := 0
+				if wt.Status == models.WorktreeStatusInUse && wt.Branch != nil && *wt.Branch != "" {
+					workspaceLen = len(*wt.Branch)
+				} else {
+					workspaceLen = len("UNCLAIMED")
+				}
+				if workspaceLen > workspaceWidth {
+					workspaceWidth = workspaceLen
+				}
+				
+				// Repo column
+				if len(repo.Name) > repoWidth {
+					repoWidth = len(repo.Name)
+				}
+				
+				// Status column
+				statusLen := 0
+				switch wt.Status {
+				case models.WorktreeStatusInUse:
+					statusLen = len("IN-USE")
+				case models.WorktreeStatusCorrupt:
+					statusLen = len("CORRUPT")
+				default:
+					statusLen = len("IDLE")
+				}
+				if statusLen > statusWidth {
+					statusWidth = statusLen
+				}
+				
+				// MAX column
+				maxStr := fmt.Sprintf("%d", repo.MaxWorktrees)
+				if len(maxStr) > maxWidth {
+					maxWidth = len(maxStr)
+				}
+				
+				// Branch column
+				if len(repo.DefaultBranch) > branchWidth {
+					branchWidth = len(repo.DefaultBranch)
+				}
+				
+				// Last sync column
+				var lastFetchLen int
+				if repo.LastFetchTime != nil {
+					timeSince := time.Since(*repo.LastFetchTime)
+					if timeSince < time.Minute {
+						lastFetchLen = len("just now")
+					} else if timeSince < time.Hour {
+						lastFetchLen = len(fmt.Sprintf("%dm ago", int(timeSince.Minutes())))
+					} else if timeSince < 24*time.Hour {
+						lastFetchLen = len(fmt.Sprintf("%dh ago", int(timeSince.Hours())))
+					} else {
+						lastFetchLen = len(fmt.Sprintf("%dd ago", int(timeSince.Hours()/24)))
+					}
+				} else {
+					lastFetchLen = len("never")
+				}
+				if lastFetchLen > lastSyncWidth {
+					lastSyncWidth = lastFetchLen
+				}
+			}
+
+			// Add some padding
+			idWidth += 2
+			workspaceWidth += 2
+			repoWidth += 2
+			statusWidth += 2
+			maxWidth += 2
+			branchWidth += 2
+			lastSyncWidth += 2
+
 			// Print beautiful header
 			fmt.Printf("\n%s%sWorktree Pool Status%s\n", colorBold, colorCyan, colorReset)
-			fmt.Printf("%s%s%s\n\n", colorGray, strings.Repeat("─", 80), colorReset)
+			totalWidth := idWidth + workspaceWidth + repoWidth + statusWidth + maxWidth + branchWidth + lastSyncWidth + 12 // 12 for spacing
+			fmt.Printf("%s%s%s\n\n", colorGray, strings.Repeat("─", totalWidth), colorReset)
+
+			// Helper function to pad string to fixed width
+			padRight := func(s string, width int) string {
+				if len(s) >= width {
+					return s[:width]
+				}
+				return s + strings.Repeat(" ", width-len(s))
+			}
 
 			// Print table header
-			w := internal.NewTabWriter()
-			fmt.Fprintf(w, "%s%sID\tWORKSPACE\tREPO\tSTATUS\tMAX\tBRANCH\tLAST_SYNC%s\n", 
-				colorBold, colorGray, colorReset)
+			fmt.Printf("%s%s%-*s  %-*s  %-*s  %-*s  %-*s  %-*s  %-*s%s\n", 
+				colorBold, colorGray,
+				idWidth, "ID",
+				workspaceWidth, "WORKSPACE",
+				repoWidth, "REPO",
+				statusWidth, "STATUS",
+				maxWidth, "MAX",
+				branchWidth, "BRANCH",
+				lastSyncWidth, "LAST_SYNC",
+				colorReset)
 			
 			// Print separator
-			fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\t%s%s\n",
+			fmt.Printf("%s%s  %s  %s  %s  %s  %s  %s%s\n",
 				colorGray,
-				strings.Repeat("─", 20),
-				strings.Repeat("─", 40),
-				strings.Repeat("─", 15),
-				strings.Repeat("─", 10),
-				strings.Repeat("─", 5),
-				strings.Repeat("─", 10),
-				strings.Repeat("─", 10),
+				strings.Repeat("─", idWidth),
+				strings.Repeat("─", workspaceWidth),
+				strings.Repeat("─", repoWidth),
+				strings.Repeat("─", statusWidth),
+				strings.Repeat("─", maxWidth),
+				strings.Repeat("─", branchWidth),
+				strings.Repeat("─", lastSyncWidth),
 				colorReset)
 
 			// Print worktrees
@@ -132,20 +239,18 @@ func NewListCmd() *cobra.Command {
 				// Format: OSC 8 ; params ; URI ST display_text OSC 8 ; ; ST
 				// OSC = \033]  ST = \033\\
 				terminalLink := fmt.Sprintf("\033]8;;file://%s\033\\%s%s%s\033]8;;\033\\", 
-					wt.Path, workspaceColor, workspaceDisplay, colorReset)
+					wt.Path, workspaceColor, padRight(workspaceDisplay, workspaceWidth), colorReset)
 				
-				// Format the row
-				fmt.Fprintf(w, "%s%s%s\t%s\t%s%s%s\t%s%s%s\t%d\t%s%s%s\t%s%s%s\n",
-					colorBlue, wt.Name, colorReset,
+				// Format the row with fixed widths
+				fmt.Printf("%s%-*s%s  %s  %s%-*s%s  %s%-*s%s  %-*d  %s%-*s%s  %s%-*s%s\n",
+					colorBlue, idWidth, wt.Name, colorReset,
 					terminalLink,
-					colorPurple, repo.Name, colorReset,
-					statusColor, statusText, colorReset,
-					repo.MaxWorktrees,
-					colorCyan, repo.DefaultBranch, colorReset,
-					colorGray, lastFetchDisplay, colorReset)
+					colorPurple, repoWidth, repo.Name, colorReset,
+					statusColor, statusWidth, statusText, colorReset,
+					maxWidth, repo.MaxWorktrees,
+					colorCyan, branchWidth, repo.DefaultBranch, colorReset,
+					colorGray, lastSyncWidth, lastFetchDisplay, colorReset)
 			}
-			
-			w.Flush()
 			
 			// Print summary
 			idle := 0
@@ -162,7 +267,7 @@ func NewListCmd() *cobra.Command {
 				}
 			}
 			
-			fmt.Printf("\n%s%s%s\n", colorGray, strings.Repeat("─", 80), colorReset)
+			fmt.Printf("\n%s%s%s\n", colorGray, strings.Repeat("─", totalWidth), colorReset)
 			fmt.Printf("%sSummary:%s Total: %s%d%s | Idle: %s%d%s | In-Use: %s%d%s | Corrupt: %s%d%s\n\n",
 				colorBold, colorReset,
 				colorBold, len(details), colorReset,
