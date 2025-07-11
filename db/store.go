@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/google/uuid"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/albertywu/gitpool/config"
 	"github.com/albertywu/gitpool/models"
+	"github.com/google/uuid"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type Store struct {
@@ -79,11 +79,11 @@ func (s *Store) migrate() error {
 	for _, query := range queries {
 		if _, err := s.db.Exec(query); err != nil {
 			// Ignore "duplicate column name" error for ALTER TABLE statements
-			if query[:11] == "ALTER TABLE" && 
+			if query[:11] == "ALTER TABLE" &&
 				(err.Error() == "duplicate column name: last_fetch_time" ||
-				 err.Error() == "SQL logic error: duplicate column name: last_fetch_time" ||
-				 err.Error() == "duplicate column name: branch" ||
-				 err.Error() == "SQL logic error: duplicate column name: branch") {
+					err.Error() == "SQL logic error: duplicate column name: last_fetch_time" ||
+					err.Error() == "duplicate column name: branch" ||
+					err.Error() == "SQL logic error: duplicate column name: branch") {
 				continue
 			}
 			return fmt.Errorf("migration failed: %w", err)
@@ -290,7 +290,7 @@ func (s *Store) ListAllWorktreesWithRepos() ([]*models.WorktreeDetail, error) {
 		var worktree models.Worktree
 		var repo models.Repository
 		var wIDStr, wRepoIDStr, rIDStr string
-		
+
 		err := rows.Scan(
 			&wIDStr, &wRepoIDStr, &worktree.Name, &worktree.Path,
 			&worktree.Status, &worktree.LeasedAt, &worktree.Branch, &worktree.CreatedAt,
@@ -305,7 +305,7 @@ func (s *Store) ListAllWorktreesWithRepos() ([]*models.WorktreeDetail, error) {
 		worktree.ID, _ = uuid.Parse(wIDStr)
 		worktree.RepoID, _ = uuid.Parse(wRepoIDStr)
 		repo.ID, _ = uuid.Parse(rIDStr)
-		
+
 		detail.Worktree = &worktree
 		detail.Repository = &repo
 		details = append(details, &detail)

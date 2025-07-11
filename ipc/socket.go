@@ -10,16 +10,16 @@ import (
 type MessageType string
 
 const (
-	MessageTypeRepoAdd        MessageType = "repo_add"
-	MessageTypeRepoList       MessageType = "repo_list"
-	MessageTypeRepoRemove     MessageType = "repo_remove"
-	MessageTypeClaim          MessageType = "claim"
-	MessageTypeRelease        MessageType = "release"
-	MessageTypePoolStatus     MessageType = "pool_status"
-	MessageTypeDaemonStatus   MessageType = "daemon_status"
-	MessageTypeWorktreeList   MessageType = "worktree_list"
-	MessageTypeResponse       MessageType = "response"
-	MessageTypeError          MessageType = "error"
+	MessageTypeRepoAdd      MessageType = "repo_add"
+	MessageTypeRepoList     MessageType = "repo_list"
+	MessageTypeRepoRemove   MessageType = "repo_remove"
+	MessageTypeClaim        MessageType = "claim"
+	MessageTypeRelease      MessageType = "release"
+	MessageTypePoolStatus   MessageType = "pool_status"
+	MessageTypeDaemonStatus MessageType = "daemon_status"
+	MessageTypeWorktreeList MessageType = "worktree_list"
+	MessageTypeResponse     MessageType = "response"
+	MessageTypeError        MessageType = "error"
 )
 
 type Message struct {

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/albertywu/gitpool/config"
 	"github.com/albertywu/gitpool/daemon"
 	"github.com/albertywu/gitpool/internal"
 	"github.com/albertywu/gitpool/ipc"
+	"github.com/spf13/cobra"
 )
 
 func NewDaemonCmd() *cobra.Command {

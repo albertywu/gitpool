@@ -3,10 +3,10 @@ package commands
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/albertywu/gitpool/config"
 	"github.com/albertywu/gitpool/daemon"
 	"github.com/albertywu/gitpool/internal"
+	"github.com/spf13/cobra"
 )
 
 var (

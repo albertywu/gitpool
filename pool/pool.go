@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/albertywu/gitpool/db"
 	"github.com/albertywu/gitpool/models"
+	"github.com/google/uuid"
 )
 
 type Pool struct {
@@ -33,7 +33,7 @@ func (p *Pool) ClaimWorktree(repoName string, branch string) (*models.Worktree, 
 	if err != nil {
 		return nil, fmt.Errorf("repository '%s' not found", repoName)
 	}
-	
+
 	// Check if branch is already in use
 	inUse, err := p.store.IsBranchInUseForRepo(repo.ID, branch)
 	if err != nil {
@@ -81,7 +81,7 @@ func (p *Pool) ClaimWorktree(repoName string, branch string) (*models.Worktree, 
 
 	// Set the branch on the claimed worktree
 	claimedWorktree.Branch = &branch
-	
+
 	// Update database with status and branch
 	if err := p.store.UpdateWorktreeStatusAndBranch(claimedWorktree.ID.String(),
 		claimedWorktree.Status, claimedWorktree.LeasedAt, claimedWorktree.Branch); err != nil {
@@ -119,7 +119,7 @@ func (p *Pool) ReleaseWorktree(worktreeID string) error {
 
 	// Clear the branch when releasing
 	releasedWorktree.Branch = nil
-	
+
 	// Update database
 	if err := p.store.UpdateWorktreeStatusAndBranch(releasedWorktree.ID.String(),
 		releasedWorktree.Status, releasedWorktree.LeasedAt, releasedWorktree.Branch); err != nil {

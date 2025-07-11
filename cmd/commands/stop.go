@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/albertywu/gitpool/config"
 	"github.com/albertywu/gitpool/internal"
 	"github.com/albertywu/gitpool/ipc"
+	"github.com/spf13/cobra"
 )
 
 func NewStopCmd() *cobra.Command {
@@ -45,10 +45,10 @@ func NewStopCmd() *cobra.Command {
 			// Send interrupt signal to daemon process
 			// In a real implementation, we'd need to track the PID
 			internal.PrintInfo("Stopping gitpool daemon...")
-			
+
 			// For now, we'll just note that users should use Ctrl+C
 			internal.PrintInfo("Please use Ctrl+C to stop the daemon process")
-			
+
 			return nil
 		},
 	}

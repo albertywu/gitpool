@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/albertywu/gitpool/config"
 	"github.com/albertywu/gitpool/internal"
 	"github.com/albertywu/gitpool/ipc"
 	"github.com/albertywu/gitpool/models"
+	"github.com/spf13/cobra"
 )
 
 // ANSI color codes
@@ -69,17 +69,17 @@ func NewListCmd() *cobra.Command {
 			maxWidth := len("MAX")
 			branchWidth := len("BRANCH")
 			lastSyncWidth := len("LAST_SYNC")
-			
+
 			// Find maximum widths based on actual data
 			for _, detail := range details {
 				wt := detail.Worktree
 				repo := detail.Repository
-				
+
 				// ID column
 				if len(wt.Name) > idWidth {
 					idWidth = len(wt.Name)
 				}
-				
+
 				// Workspace column
 				workspaceLen := 0
 				if wt.Status == models.WorktreeStatusInUse && wt.Branch != nil && *wt.Branch != "" {
@@ -90,12 +90,12 @@ func NewListCmd() *cobra.Command {
 				if workspaceLen > workspaceWidth {
 					workspaceWidth = workspaceLen
 				}
-				
+
 				// Repo column
 				if len(repo.Name) > repoWidth {
 					repoWidth = len(repo.Name)
 				}
-				
+
 				// Status column
 				statusLen := 0
 				switch wt.Status {
@@ -109,18 +109,18 @@ func NewListCmd() *cobra.Command {
 				if statusLen > statusWidth {
 					statusWidth = statusLen
 				}
-				
+
 				// MAX column
 				maxStr := fmt.Sprintf("%d", repo.MaxWorktrees)
 				if len(maxStr) > maxWidth {
 					maxWidth = len(maxStr)
 				}
-				
+
 				// Branch column
 				if len(repo.DefaultBranch) > branchWidth {
 					branchWidth = len(repo.DefaultBranch)
 				}
-				
+
 				// Last sync column
 				var lastFetchLen int
 				if repo.LastFetchTime != nil {
@@ -165,7 +165,7 @@ func NewListCmd() *cobra.Command {
 			}
 
 			// Print table header
-			fmt.Printf("%s%s%-*s  %-*s  %-*s  %-*s  %-*s  %-*s  %-*s%s\n", 
+			fmt.Printf("%s%s%-*s  %-*s  %-*s  %-*s  %-*s  %-*s  %-*s%s\n",
 				colorBold, colorGray,
 				idWidth, "ID",
 				workspaceWidth, "WORKSPACE",
@@ -175,7 +175,7 @@ func NewListCmd() *cobra.Command {
 				branchWidth, "BRANCH",
 				lastSyncWidth, "LAST_SYNC",
 				colorReset)
-			
+
 			// Print separator
 			fmt.Printf("%s%s  %s  %s  %s  %s  %s  %s%s\n",
 				colorGray,
@@ -192,7 +192,7 @@ func NewListCmd() *cobra.Command {
 			for _, detail := range details {
 				wt := detail.Worktree
 				repo := detail.Repository
-				
+
 				// Choose color based on status
 				statusColor := colorGreen
 				statusText := "IDLE"
@@ -220,11 +220,11 @@ func NewListCmd() *cobra.Command {
 				} else {
 					lastFetchDisplay = "never"
 				}
-				
+
 				// Format workspace display based on status
 				var workspaceDisplay string
 				var workspaceColor string
-				
+
 				if wt.Status == models.WorktreeStatusInUse && wt.Branch != nil && *wt.Branch != "" {
 					// Show branch name in yellow for claimed workspaces
 					workspaceDisplay = *wt.Branch
@@ -234,13 +234,13 @@ func NewListCmd() *cobra.Command {
 					workspaceDisplay = "UNCLAIMED"
 					workspaceColor = colorGray
 				}
-				
+
 				// Add terminal hyperlink to workspace path
 				// Format: OSC 8 ; params ; URI ST display_text OSC 8 ; ; ST
 				// OSC = \033]  ST = \033\\
-				terminalLink := fmt.Sprintf("\033]8;;file://%s\033\\%s%s%s\033]8;;\033\\", 
+				terminalLink := fmt.Sprintf("\033]8;;file://%s\033\\%s%s%s\033]8;;\033\\",
 					wt.Path, workspaceColor, padRight(workspaceDisplay, workspaceWidth), colorReset)
-				
+
 				// Format the row with fixed widths
 				fmt.Printf("%s%-*s%s  %s  %s%-*s%s  %s%-*s%s  %-*d  %s%-*s%s  %s%-*s%s\n",
 					colorBlue, idWidth, wt.Name, colorReset,
@@ -251,7 +251,7 @@ func NewListCmd() *cobra.Command {
 					colorCyan, branchWidth, repo.DefaultBranch, colorReset,
 					colorGray, lastSyncWidth, lastFetchDisplay, colorReset)
 			}
-			
+
 			// Print summary
 			idle := 0
 			inUse := 0
@@ -266,7 +266,7 @@ func NewListCmd() *cobra.Command {
 					corrupt++
 				}
 			}
-			
+
 			fmt.Printf("\n%s%s%s\n", colorGray, strings.Repeat("─", totalWidth), colorReset)
 			fmt.Printf("%sSummary:%s Total: %s%d%s | Idle: %s%d%s | In-Use: %s%d%s | Corrupt: %s%d%s\n\n",
 				colorBold, colorReset,

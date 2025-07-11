@@ -5,11 +5,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/albertywu/gitpool/config"
 	"github.com/albertywu/gitpool/db"
 	"github.com/albertywu/gitpool/models"
 	"github.com/albertywu/gitpool/pool"
+	"github.com/google/uuid"
 )
 
 type Reconciler struct {
@@ -157,7 +157,7 @@ func (r *Reconciler) distributeInitialFetchTimes(repos []*models.Repository) {
 	for i, repo := range reposNeedingInit {
 		// Get the fetch interval for this repo
 		fetchInterval := r.config.GetRepoFetchInterval(repo.Name)
-		
+
 		// Calculate offset: distribute repos evenly across the interval
 		// For example, if we have 3 repos with 1h interval:
 		// - Repo 1: now - 0h (fetches immediately)
@@ -165,7 +165,7 @@ func (r *Reconciler) distributeInitialFetchTimes(repos []*models.Repository) {
 		// - Repo 3: now - 40m (fetches in 20m)
 		offset := fetchInterval * time.Duration(i) / time.Duration(len(reposNeedingInit))
 		initialFetchTime := now.Add(-offset)
-		
+
 		// Update the repo's last fetch time
 		if err := r.store.UpdateRepositoryLastFetch(repo.Name, initialFetchTime); err != nil {
 			log.Printf("[ERROR] Failed to set initial fetch time for '%s': %v", repo.Name, err)

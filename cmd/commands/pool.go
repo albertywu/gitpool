@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/albertywu/gitpool/config"
 	"github.com/albertywu/gitpool/internal"
 	"github.com/albertywu/gitpool/ipc"
 	"github.com/albertywu/gitpool/models"
+	"github.com/spf13/cobra"
 )
 
 var poolStatusRepo string

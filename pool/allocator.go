@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/albertywu/gitpool/config"
 	"github.com/albertywu/gitpool/models"
+	"github.com/google/uuid"
 )
 
 type Allocator struct {
@@ -107,15 +107,15 @@ func (a *Allocator) UpdateWorktree(repo *models.Repository, worktree *models.Wor
 	if err != nil {
 		return fmt.Errorf("failed to get latest commit SHA: %w", err)
 	}
-	
+
 	latestSHA := strings.TrimSpace(string(output))
-	
+
 	// Reset worktree to the latest commit (maintains detached HEAD state)
 	cmd = exec.Command("git", "-C", worktree.Path, "reset", "--hard", latestSHA)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to update worktree to %s: %w\nOutput: %s", latestSHA, err, string(output))
 	}
-	
+
 	log.Printf("[INFO] Updated worktree %s to commit %s", worktree.Name, latestSHA[:7])
 
 	return nil

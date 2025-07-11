@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/albertywu/gitpool/cmd/commands"
 	"github.com/albertywu/gitpool/internal"
+	"github.com/spf13/cobra"
 )
 
 func main() {
@@ -28,7 +28,7 @@ Developers can instantly "claim" worktrees and "release" them back for reuse.`,
 	rootCmd.AddCommand(commands.NewRemoveCmd())
 	rootCmd.AddCommand(commands.NewClaimCmd())
 	rootCmd.AddCommand(commands.NewReleaseCmd())
-	
+
 	// Keep list command for repositories
 	rootCmd.AddCommand(commands.NewListCmd())
 

@@ -3,10 +3,10 @@ package commands
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/albertywu/gitpool/config"
 	"github.com/albertywu/gitpool/internal"
 	"github.com/albertywu/gitpool/ipc"
+	"github.com/spf13/cobra"
 )
 
 func NewReleaseCmd() *cobra.Command {

@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/albertywu/gitpool/config"
 	"github.com/albertywu/gitpool/internal"
 	"github.com/albertywu/gitpool/ipc"
+	"github.com/spf13/cobra"
 )
 
 func NewClaimCmd() *cobra.Command {
 	var branch string
-	
+
 	cmd := &cobra.Command{
 		Use:   "claim <repo-name> --branch <branch-name>",
 		Short: "Claim a worktree from the pool",
@@ -35,12 +35,12 @@ Output:
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repoName := args[0]
-			
+
 			// Validate branch flag is provided
 			if branch == "" {
 				return fmt.Errorf("--branch flag is required")
 			}
-			
+
 			// Validate branch name
 			if err := validateBranchName(branch); err != nil {
 				return fmt.Errorf("invalid branch name: %w", err)
@@ -73,7 +73,7 @@ Output:
 			if err != nil {
 				return fmt.Errorf("failed to marshal response: %w", err)
 			}
-			
+
 			var claimResp ipc.ClaimResponse
 			if err := json.Unmarshal(jsonData, &claimResp); err != nil {
 				return fmt.Errorf("failed to parse response: %w", err)
@@ -85,7 +85,7 @@ Output:
 			return nil
 		},
 	}
-	
+
 	cmd.Flags().StringVar(&branch, "branch", "", "Branch name for the workspace (required)")
 	cmd.MarkFlagRequired("branch")
 
@@ -98,7 +98,7 @@ func validateBranchName(branch string) error {
 	if branch == "" {
 		return fmt.Errorf("branch name cannot be empty")
 	}
-	
+
 	// Check for invalid characters
 	invalidChars := []string{" ", "..", "~", "^", ":", "?", "*", "[", "\\", "@{"}
 	for _, char := range invalidChars {
@@ -106,23 +106,23 @@ func validateBranchName(branch string) error {
 			return fmt.Errorf("branch name contains invalid character: %s", char)
 		}
 	}
-	
+
 	// Check for invalid patterns
 	if branch[0] == '.' || branch[0] == '-' {
 		return fmt.Errorf("branch name cannot start with '.' or '-'")
 	}
-	
+
 	if branch[len(branch)-1] == '.' || branch[len(branch)-1] == '/' {
 		return fmt.Errorf("branch name cannot end with '.' or '/'")
 	}
-	
+
 	if branch == "@" {
 		return fmt.Errorf("branch name cannot be '@'")
 	}
-	
+
 	if strings.Contains(branch, "//") {
 		return fmt.Errorf("branch name cannot contain consecutive slashes")
 	}
-	
+
 	return nil
 }

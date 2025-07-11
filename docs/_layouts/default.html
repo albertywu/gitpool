@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="{{ site.lang | default: "en-US" }}">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- SEO Tags -->
+    {% seo %}
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ '/assets/images/favicon.png' | relative_url }}" sizes="32x32">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ '/assets/css/animations.css' | relative_url }}">
+    
+    <!-- Custom JavaScript -->
+    <script src="{{ '/assets/js/main.js' | relative_url }}" defer></script>
+    
+    <!-- Analytics -->
+    {% if site.google_analytics %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ site.google_analytics }}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '{{ site.google_analytics }}');
+    </script>
+    {% endif %}
+  </head>
+  <body>
+    <div class="container-lg px-3 my-5 markdown-body">
+      {% if site.title and site.title != page.title %}
+      <header>
+        <nav class="site-nav">
+          <a href="{{ "/" | relative_url }}" class="site-title">{{ site.title }}</a>
+          <div class="nav-links">
+            <a href="{{ "/quickstart" | relative_url }}">Quick Start</a>
+            <a href="{{ "/docs" | relative_url }}">Docs</a>
+            <a href="{{ "/examples" | relative_url }}">Examples</a>
+            <a href="{{ site.github.repository_url }}">GitHub</a>
+          </div>
+        </nav>
+      </header>
+      {% endif %}
+
+      <main>
+        {{ content }}
+      </main>
+
+      {% if site.github.private != true and site.github.license %}
+      <footer class="site-footer">
+        <div class="footer-content">
+          <div class="footer-section">
+            <h4>GitPool</h4>
+            <p>Lightning-fast Git worktree management for CI/CD and development workflows.</p>
+          </div>
+          <div class="footer-section">
+            <h4>Resources</h4>
+            <ul>
+              <li><a href="{{ "/quickstart" | relative_url }}">Quick Start</a></li>
+              <li><a href="{{ "/docs" | relative_url }}">Documentation</a></li>
+              <li><a href="{{ "/examples" | relative_url }}">Examples</a></li>
+            </ul>
+          </div>
+          <div class="footer-section">
+            <h4>Community</h4>
+            <ul>
+              <li><a href="{{ site.github.repository_url }}">GitHub</a></li>
+              <li><a href="{{ site.github.repository_url }}/issues">Issues</a></li>
+              <li><a href="{{ site.github.repository_url }}/discussions">Discussions</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2024 GitPool. Licensed under the <a href="{{ site.github.repository_url }}/blob/main/{{ site.github.license.spdx_id }}">{{ site.github.license.name }}</a>.</p>
+        </div>
+      </footer>
+      {% endif %}
+    </div>
+
+    <style>
+      /* Custom layout styles */
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: #fff;
+      }
+      
+      .site-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 0 2rem 0;
+        border-bottom: 1px solid #e9ecef;
+        margin-bottom: 2rem;
+      }
+      
+      .site-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #667eea;
+        text-decoration: none;
+      }
+      
+      .nav-links {
+        display: flex;
+        gap: 1.5rem;
+      }
+      
+      .nav-links a {
+        color: #495057;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s ease;
+      }
+      
+      .nav-links a:hover {
+        color: #667eea;
+      }
+      
+      .site-footer {
+        margin-top: 4rem;
+        padding: 3rem 0 1rem 0;
+        border-top: 1px solid #e9ecef;
+        background: #f8f9fa;
+      }
+      
+      .footer-content {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+      
+      .footer-section h4 {
+        color: #333;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+      }
+      
+      .footer-section ul {
+        list-style: none;
+        padding: 0;
+      }
+      
+      .footer-section li {
+        margin-bottom: 0.5rem;
+      }
+      
+      .footer-section a {
+        color: #666;
+        text-decoration: none;
+      }
+      
+      .footer-section a:hover {
+        color: #667eea;
+      }
+      
+      .footer-bottom {
+        text-align: center;
+        padding-top: 2rem;
+        border-top: 1px solid #e9ecef;
+        color: #666;
+        font-size: 0.9rem;
+      }
+      
+      /* Dark theme footer */
+      .dark-theme .site-footer {
+        background: #2d2d2d;
+        border-top-color: #444;
+      }
+      
+      .dark-theme .footer-section h4 {
+        color: #e0e0e0;
+      }
+      
+      .dark-theme .footer-bottom {
+        border-top-color: #444;
+        color: #ccc;
+      }
+      
+      /* Mobile responsiveness */
+      @media (max-width: 768px) {
+        .site-nav {
+          flex-direction: column;
+          gap: 1rem;
+          text-align: center;
+        }
+        
+        .nav-links {
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 1rem;
+        }
+        
+        .footer-content {
+          grid-template-columns: 1fr;
+          text-align: center;
+        }
+      }
+    </style>
+  </body>
+</html>
