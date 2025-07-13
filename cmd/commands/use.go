@@ -11,27 +11,35 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewClaimCmd() *cobra.Command {
+func NewUseCmd() *cobra.Command {
 	var branch string
 
 	cmd := &cobra.Command{
-		Use:   "claim <repo-name> --branch <branch-name>",
-		Short: "Claim a worktree from the pool",
-		Long: `Claim an available worktree from the pool for the specified repository.
+		Use:   "use <repo-name> --branch <branch-name>",
+		Short: "Use a worktree from the pool",
+		Long: `Use an available worktree from the pool for the specified repository.
 
 The --branch flag is required and must be a valid git branch name.
 Branch names must be unique within the repository's workspaces.
 
-Output format (two lines):
-  <worktree-id>
-  <absolute-path>
+The command outputs JSON with the worktree ID and path to STDOUT.
+Error messages are printed to STDERR.
 
 Example:
-  gitpool claim my-app --branch feature-xyz
+  gitpool use my-app --branch feature-xyz
   
 Output:
-  a91b6fc1-4322-4b2f-8c1a-123456789abc
-  /home/user/.gitpool/worktrees/my-app/a91b6fc1-4322-4b2f-8c1a-123456789abc`,
+  {
+    "worktree_id": "a91b6fc1-4322-4b2f-8c1a-123456789abc",
+    "path": "/home/user/.gitpool/worktrees/my-app/a91b6fc1-4322-4b2f-8c1a-123456789abc"
+  }
+  
+Usage with jq:
+  # Get just the path
+  gitpool use my-app --branch feature-xyz | jq -r .path
+  
+  # CD into the worktree
+  cd $(gitpool use my-app --branch feature-xyz | jq -r .path)`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repoName := args[0]
@@ -63,7 +71,7 @@ Output:
 			}
 
 			if !resp.Success {
-				internal.PrintError("Failed to claim worktree: %s", resp.Error)
+				internal.PrintError("Failed to use worktree: %s", resp.Error)
 				return fmt.Errorf("claim failed")
 			}
 
@@ -79,8 +87,18 @@ Output:
 				return fmt.Errorf("failed to parse response: %w", err)
 			}
 
-			// Print worktree ID and path on separate lines
-			fmt.Printf("%s\n%s\n", claimResp.WorktreeID, claimResp.Path)
+			// Create JSON output with worktree ID and path
+			output := map[string]string{
+				"worktree_id": claimResp.WorktreeID,
+				"path":        claimResp.Path,
+			}
+
+			// Marshal and print JSON to STDOUT
+			jsonOutput, err := json.MarshalIndent(output, "", "  ")
+			if err != nil {
+				return fmt.Errorf("failed to create JSON output: %w", err)
+			}
+			fmt.Println(string(jsonOutput))
 
 			return nil
 		},

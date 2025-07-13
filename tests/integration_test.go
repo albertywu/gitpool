@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -311,21 +312,28 @@ func TestWorktreeCommands(t *testing.T) {
 
 	var worktreeID string
 
-	t.Run("claim worktree", func(t *testing.T) {
-		output, err := tc.RunGitpoolCommand("claim", "test-repo", "--branch", "main")
+	t.Run("use worktree", func(t *testing.T) {
+		output, err := tc.RunGitpoolCommand("use", "test-repo", "--branch", "main")
 		if err != nil {
-			t.Fatalf("Failed to claim worktree: %v\nOutput: %s", err, output)
+			t.Fatalf("Failed to use worktree: %v\nOutput: %s", err, output)
 		}
 
 		output = strings.TrimSpace(output)
-		// Output should be two lines: worktree-id and path
-		lines := strings.Split(output, "\n")
-		if len(lines) != 2 {
-			t.Fatalf("Expected output to contain worktree ID and path on separate lines, got: %s", output)
+		// Output should be JSON with worktree_id and path
+		var result map[string]string
+		if err := json.Unmarshal([]byte(output), &result); err != nil {
+			t.Fatalf("Expected JSON output, got: %s, error: %v", output, err)
 		}
 
-		worktreeID = lines[0]
-		worktreePath := lines[1]
+		worktreeID = result["worktree_id"]
+		worktreePath := result["path"]
+
+		if worktreeID == "" {
+			t.Errorf("Expected worktree_id in JSON output")
+		}
+		if worktreePath == "" {
+			t.Errorf("Expected path in JSON output")
+		}
 
 		// Worktree ID should be a UUID format
 		if len(worktreeID) < 32 {
@@ -404,13 +412,15 @@ func TestFullWorkflow(t *testing.T) {
 	// Claim multiple worktrees
 	var worktreeIDs []string
 	for i := 0; i < 2; i++ {
-		output, err := tc.RunGitpoolCommand("claim", "workflow-repo", "--branch", fmt.Sprintf("branch-%d", i))
+		output, err := tc.RunGitpoolCommand("use", "workflow-repo", "--branch", fmt.Sprintf("branch-%d", i))
 		if err != nil {
-			t.Fatalf("Failed to claim worktree %d: %v", i, err)
+			t.Fatalf("Failed to use worktree %d: %v", i, err)
 		}
-		lines := strings.Split(strings.TrimSpace(output), "\n")
-		if len(lines) >= 1 {
-			worktreeIDs = append(worktreeIDs, lines[0])
+		var result map[string]string
+		if err := json.Unmarshal([]byte(strings.TrimSpace(output)), &result); err == nil {
+			if id := result["worktree_id"]; id != "" {
+				worktreeIDs = append(worktreeIDs, id)
+			}
 		}
 	}
 
