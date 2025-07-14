@@ -20,7 +20,7 @@ func NewClaimCmd() *cobra.Command {
 		Long: `Claim an available worktree from the pool for the specified repository.
 
 The --branch flag is required and must be a valid git branch name.
-Branch names must be unique within the repository's workspaces.
+Branch names must be unique within the repository's worktrees.
 
 The command outputs JSON with the worktree ID and path to STDOUT.
 Error messages are printed to STDERR.
@@ -104,7 +104,7 @@ Usage with jq:
 		},
 	}
 
-	cmd.Flags().StringVar(&branch, "branch", "", "Branch name for the workspace (required)")
+	cmd.Flags().StringVar(&branch, "branch", "", "Branch name for the worktree (required)")
 	cmd.MarkFlagRequired("branch")
 
 	return cmd

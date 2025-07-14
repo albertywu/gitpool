@@ -83,7 +83,7 @@ func NewListCmd() *cobra.Command {
 			// Calculate column widths based on data
 			// Start with header lengths as minimum
 			idWidth := len("ID")
-			workspaceWidth := len("WORKSPACE")
+			worktreeWidth := len("WORKTREE")
 			repoWidth := len("REPO")
 			claimedAtWidth := len("CLAIMED_AT")
 
@@ -97,15 +97,15 @@ func NewListCmd() *cobra.Command {
 					idWidth = len(wt.Name)
 				}
 
-				// Workspace column
-				workspaceLen := 0
+				// Worktree column
+				worktreeLen := 0
 				if wt.Status == models.WorktreeStatusInUse && wt.Branch != nil && *wt.Branch != "" {
-					workspaceLen = len(*wt.Branch)
+					worktreeLen = len(*wt.Branch)
 				} else {
-					workspaceLen = len("UNCLAIMED")
+					worktreeLen = len("UNCLAIMED")
 				}
-				if workspaceLen > workspaceWidth {
-					workspaceWidth = workspaceLen
+				if worktreeLen > worktreeWidth {
+					worktreeWidth = worktreeLen
 				}
 
 				// Repo column
@@ -136,13 +136,13 @@ func NewListCmd() *cobra.Command {
 
 			// Add some padding
 			idWidth += 2
-			workspaceWidth += 2
+			worktreeWidth += 2
 			repoWidth += 2
 			claimedAtWidth += 2
 
 			// Print beautiful header
 			fmt.Printf("\n%s%sWorktree Pool Status%s\n", colorBold, colorCyan, colorReset)
-			totalWidth := idWidth + workspaceWidth + repoWidth + claimedAtWidth + 6 // 6 for spacing
+			totalWidth := idWidth + worktreeWidth + repoWidth + claimedAtWidth + 6 // 6 for spacing
 			fmt.Printf("%s%s%s\n\n", colorGray, strings.Repeat("─", totalWidth), colorReset)
 
 			// Helper function to pad string to fixed width
@@ -157,7 +157,7 @@ func NewListCmd() *cobra.Command {
 			fmt.Printf("%s%s%-*s  %-*s  %-*s  %-*s%s\n",
 				colorBold, colorGray,
 				idWidth, "ID",
-				workspaceWidth, "WORKSPACE",
+				worktreeWidth, "WORKTREE",
 				repoWidth, "REPO",
 				claimedAtWidth, "CLAIMED_AT",
 				colorReset)
@@ -166,7 +166,7 @@ func NewListCmd() *cobra.Command {
 			fmt.Printf("%s%s  %s  %s  %s%s\n",
 				colorGray,
 				strings.Repeat("─", idWidth),
-				strings.Repeat("─", workspaceWidth),
+				strings.Repeat("─", worktreeWidth),
 				strings.Repeat("─", repoWidth),
 				strings.Repeat("─", claimedAtWidth),
 				colorReset)
@@ -194,25 +194,25 @@ func NewListCmd() *cobra.Command {
 					claimedAtDisplay = "-"
 				}
 
-				// Format workspace display based on status
-				var workspaceDisplay string
-				var workspaceColor string
+				// Format worktree display based on status
+				var worktreeDisplay string
+				var worktreeColor string
 
 				if wt.Status == models.WorktreeStatusInUse && wt.Branch != nil && *wt.Branch != "" {
-					// Show branch name in yellow for claimed workspaces
-					workspaceDisplay = *wt.Branch
-					workspaceColor = colorYellow
+					// Show branch name in yellow for claimed worktrees
+					worktreeDisplay = *wt.Branch
+					worktreeColor = colorYellow
 				} else {
-					// Show "UNCLAIMED" in gray for idle workspaces
-					workspaceDisplay = "UNCLAIMED"
-					workspaceColor = colorGray
+					// Show "UNCLAIMED" in gray for idle worktrees
+					worktreeDisplay = "UNCLAIMED"
+					worktreeColor = colorGray
 				}
 
-				// Add terminal hyperlink to workspace path
+				// Add terminal hyperlink to worktree path
 				// Format: OSC 8 ; params ; URI ST display_text OSC 8 ; ; ST
 				// OSC = \033]  ST = \033\\
 				terminalLink := fmt.Sprintf("\033]8;;file://%s\033\\%s%s%s\033]8;;\033\\",
-					wt.Path, workspaceColor, padRight(workspaceDisplay, workspaceWidth), colorReset)
+					wt.Path, worktreeColor, padRight(worktreeDisplay, worktreeWidth), colorReset)
 
 				// Format the row with fixed widths
 				fmt.Printf("%s%-*s%s  %s  %s%-*s%s  %s%-*s%s\n",

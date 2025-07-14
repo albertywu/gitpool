@@ -107,22 +107,22 @@ wait
 
 ## Branch Management
 
-GitPool requires a unique branch name when claiming a workspace:
+GitPool requires a unique branch name when claiming a worktree:
 
-- **Branch names must be unique** within a repository - no two active workspaces can use the same branch
+- **Branch names must be unique** within a repository - no two active worktrees can use the same branch
 - **Branch validation** ensures names follow Git conventions (no spaces, special characters, etc.)
-- **Automatic cleanup** - branch associations are cleared when workspaces are released
+- **Automatic cleanup** - branch associations are cleared when worktrees are released
 
 The `gitpool list` command shows:
 - **Sorting**: Claimed worktrees appear first, followed by unclaimed ones
-- **Claimed workspaces**: Display the branch name in yellow as a clickable link
-- **Unclaimed workspaces**: Display "UNCLAIMED" in gray as a clickable link
+- **Claimed worktrees**: Display the branch name in yellow as a clickable link
+- **Unclaimed worktrees**: Display "UNCLAIMED" in gray as a clickable link
 - **Claimed_at column**: Shows when a worktree was claimed, or "-" for unclaimed worktrees
-- All links open the workspace directory when clicked (Cmd/Ctrl+click in supported terminals)
+- All links open the worktree directory when clicked (Cmd/Ctrl+click in supported terminals)
 
 Example output:
 ```
-ID                                    WORKSPACE       REPO            CLAIMED_AT
+ID                                    WORKTREE        REPO            CLAIMED_AT
 ────────────────────────────────────  ─────────────   ─────────────   ──────────────
 a91b6fc1-1234-5678-90ab-cdef12345678  feature-xyz     backend-api     5m ago
 c73d8ef3-3456-789a-12cd-ef3456789012  hotfix-123      backend-api     1h ago

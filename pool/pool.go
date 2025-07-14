@@ -40,7 +40,7 @@ func (p *Pool) ClaimWorktree(repoName string, branch string) (*models.Worktree, 
 		return nil, fmt.Errorf("failed to check branch availability: %w", err)
 	}
 	if inUse {
-		return nil, fmt.Errorf("branch '%s' is already in use by another workspace in this repository", branch)
+		return nil, fmt.Errorf("branch '%s' is already in use by another worktree in this repository", branch)
 	}
 
 	// Get idle worktrees

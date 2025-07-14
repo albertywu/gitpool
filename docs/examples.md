@@ -141,7 +141,7 @@ after_script:
 ### Quick Feature Experimentation
 ```bash
 #!/bin/bash
-# quick-experiment.sh - Quickly test ideas without affecting main workspace
+# quick-experiment.sh - Quickly test ideas without affecting main worktree
 
 set -e
 

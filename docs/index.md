@@ -185,7 +185,7 @@ description: Skip the wait. GitPool maintains a pool of pre-initialized Git work
       </div>
       <div class="use-case">
         <h3>🔬 Quick Experiments</h3>
-        <p>Instantly spin up isolated environments for trying out ideas without affecting your main workspace.</p>
+        <p>Instantly spin up isolated environments for trying out ideas without affecting your main worktree.</p>
       </div>
       <div class="use-case">
         <h3>🚢 Release Automation</h3>
