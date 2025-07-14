@@ -22,7 +22,7 @@ func NewManager(store *db.Store) *Manager {
 	}
 }
 
-func (m *Manager) AddRepository(name, path, defaultBranch string, maxWorktrees, fetchInterval int) (*models.Repository, error) {
+func (m *Manager) AddRepository(name, path, defaultBranch string, maxWorktrees int) (*models.Repository, error) {
 	// Validate repository path
 	absPath, err := filepath.Abs(path)
 	if err != nil {
@@ -43,15 +43,15 @@ func (m *Manager) AddRepository(name, path, defaultBranch string, maxWorktrees, 
 		return nil, fmt.Errorf("repository '%s' already exists", name)
 	}
 
-	// Create repository record
-	repo := models.NewRepository(name, absPath, defaultBranch, maxWorktrees, fetchInterval)
+	// Create repository record - no fetch interval, refresh is manual
+	repo := models.NewRepository(name, absPath, defaultBranch, maxWorktrees, 0)
 	if err := m.store.CreateRepository(repo); err != nil {
 		return nil, fmt.Errorf("failed to save repository: %w", err)
 	}
 
 	log.Printf("[INFO] Added repo '%s' at %s", name, absPath)
-	log.Printf("[INFO] Max worktrees: %d, Default branch: %s, Fetch interval: %dm",
-		maxWorktrees, defaultBranch, fetchInterval)
+	log.Printf("[INFO] Max worktrees: %d, Default branch: %s",
+		maxWorktrees, defaultBranch)
 
 	return repo, nil
 }

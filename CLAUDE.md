@@ -52,8 +52,10 @@ Tests use temporary directories (`/tmp/gitpool-test-*`) and clean up automatical
 - `gitpool start`: Start daemon
 - `gitpool track <repo-name> <repo-path>`: Track repository (use --max flag for worktree count, defaults to 8)
 - `gitpool untrack <repo-name>`: Stop tracking repository and clean up worktrees
+- `gitpool refresh <repo-name>`: Manually fetch updates and refresh idle worktrees
 - `gitpool use <repo> --branch <branch>`: Get worktree (returns JSON)
 - `gitpool release <worktree-id>`: Return worktree to pool
+- `gitpool show <worktree-id>`: Get details about a specific worktree (supports --format path)
 - `gitpool list`: Show all worktrees
 
 ## Development Notes

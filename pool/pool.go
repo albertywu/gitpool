@@ -283,3 +283,56 @@ func (p *Pool) ReconcileWorktrees(repo *models.Repository) (*models.ReconcilerRu
 
 	return run, nil
 }
+
+// MaintainWorktreePool only manages pool size and cleans corrupt worktrees
+// It does NOT fetch updates - that's done via explicit refresh command
+func (p *Pool) MaintainWorktreePool(repo *models.Repository) (*models.ReconcilerRun, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	run := &models.ReconcilerRun{
+		ID:      uuid.New(),
+		RunTime: time.Now(),
+		Created: 0,
+		Cleaned: 0,
+	}
+
+	// Get all worktrees
+	worktrees, err := p.store.ListWorktreesByRepo(repo.ID)
+	if err != nil {
+		return run, fmt.Errorf("failed to list worktrees: %w", err)
+	}
+
+	// Clean up corrupt worktrees
+	for _, wt := range worktrees {
+		if wt.Status == models.WorktreeStatusCorrupt {
+			if err := p.allocator.DeleteWorktree(repo, wt); err != nil {
+				log.Printf("[ERROR] Failed to delete corrupt worktree %s: %v", wt.Name, err)
+			} else {
+				p.store.DeleteWorktree(wt.ID.String())
+				run.Cleaned++
+			}
+		}
+	}
+
+	// Create new worktrees if under capacity
+	currentCount := len(worktrees) - run.Cleaned
+	targetCount := repo.MaxWorktrees
+
+	if currentCount < targetCount {
+		toCreate := targetCount - currentCount
+
+		for i := 0; i < toCreate; i++ {
+			if err := p.createWorktree(repo); err != nil {
+				log.Printf("[ERROR] Failed to create worktree: %v", err)
+			} else {
+				run.Created++
+			}
+		}
+	}
+
+	// Note: We do NOT fetch or update worktrees here
+	// Updates only happen via explicit 'gitpool refresh' command
+
+	return run, nil
+}

@@ -9,14 +9,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-type RepoConfig struct {
-	FetchInterval time.Duration `mapstructure:"fetch_interval"`
-}
-
 type Config struct {
-	ReconciliationInterval time.Duration          `mapstructure:"reconciliation_interval"`
-	SocketPath             string                 `mapstructure:"socket_path"`
-	Repos                  map[string]*RepoConfig `mapstructure:"repos"`
+	ReconciliationInterval time.Duration `mapstructure:"reconciliation_interval"`
+	SocketPath             string        `mapstructure:"socket_path"`
 	// Custom paths (can be set via CLI flags)
 	ConfigDir   string `mapstructure:"-"`
 	WorktreeDir string `mapstructure:"-"`
@@ -49,7 +44,6 @@ func LoadWithCustomPaths(configDir, worktreeDir, socketPath string) (*Config, er
 
 	// Set defaults
 	viper.SetDefault("reconciliation_interval", "1m")
-	viper.SetDefault("repos", map[string]*RepoConfig{})
 
 	// Read config if exists
 	_ = viper.ReadInConfig() // Ignore error - config file is optional
@@ -57,11 +51,6 @@ func LoadWithCustomPaths(configDir, worktreeDir, socketPath string) (*Config, er
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
-	}
-
-	// Initialize repos map if nil
-	if cfg.Repos == nil {
-		cfg.Repos = make(map[string]*RepoConfig)
 	}
 
 	// Set custom paths
@@ -82,13 +71,6 @@ func LoadWithCustomPaths(configDir, worktreeDir, socketPath string) (*Config, er
 	return &cfg, nil
 }
 
-// GetRepoFetchInterval returns the fetch interval for a repository, or 1h if not configured
-func (c *Config) GetRepoFetchInterval(repoName string) time.Duration {
-	if repoConfig, exists := c.Repos[repoName]; exists {
-		return repoConfig.FetchInterval
-	}
-	return time.Hour // Default to 1 hour
-}
 
 // GetWorktreeDir returns the hardcoded worktree directory
 func GetWorktreeDir() string {

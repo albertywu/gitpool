@@ -18,6 +18,8 @@ const (
 	MessageTypePoolStatus   MessageType = "pool_status"
 	MessageTypeDaemonStatus MessageType = "daemon_status"
 	MessageTypeWorktreeList MessageType = "worktree_list"
+	MessageTypeRefresh      MessageType = "refresh"
+	MessageTypeShow         MessageType = "show"
 	MessageTypeResponse     MessageType = "response"
 	MessageTypeError        MessageType = "error"
 )
@@ -38,7 +40,6 @@ type RepoAddRequest struct {
 	Path          string `json:"path"`
 	MaxWorktrees  int    `json:"max_worktrees"`
 	DefaultBranch string `json:"default_branch"`
-	FetchInterval int    `json:"fetch_interval"`
 }
 
 type ClaimRequest struct {
@@ -59,6 +60,14 @@ type PoolStatusRequest struct {
 	RepoName string `json:"repo_name,omitempty"`
 }
 
+type RefreshRequest struct {
+	RepoName string `json:"repo_name"`
+}
+
+type ShowRequest struct {
+	WorktreeID string `json:"worktree_id"`
+}
+
 type Server struct {
 	socketPath string
 	listener   net.Listener
@@ -74,6 +83,8 @@ type Handler interface {
 	HandlePoolStatus(req PoolStatusRequest) Response
 	HandleDaemonStatus() Response
 	HandleWorktreeList() Response
+	HandleRefresh(req RefreshRequest) Response
+	HandleShow(req ShowRequest) Response
 }
 
 func NewServer(socketPath string, handler Handler) (*Server, error) {
@@ -179,6 +190,22 @@ func (s *Server) handleConnection(conn net.Conn) {
 	case MessageTypeWorktreeList:
 		response = s.handler.HandleWorktreeList()
 
+	case MessageTypeRefresh:
+		var req RefreshRequest
+		if err := json.Unmarshal(msg.Data, &req); err != nil {
+			response = Response{Success: false, Error: "invalid request data"}
+		} else {
+			response = s.handler.HandleRefresh(req)
+		}
+
+	case MessageTypeShow:
+		var req ShowRequest
+		if err := json.Unmarshal(msg.Data, &req); err != nil {
+			response = Response{Success: false, Error: "invalid request data"}
+		} else {
+			response = s.handler.HandleShow(req)
+		}
+
 	default:
 		response = Response{Success: false, Error: "unknown message type"}
 	}
@@ -251,4 +278,14 @@ func (c *Client) DaemonStatus() (*Response, error) {
 
 func (c *Client) WorktreeList() (*Response, error) {
 	return c.SendMessage(Message{Type: MessageTypeWorktreeList})
+}
+
+func (c *Client) Refresh(req RefreshRequest) (*Response, error) {
+	data, _ := json.Marshal(req)
+	return c.SendMessage(Message{Type: MessageTypeRefresh, Data: data})
+}
+
+func (c *Client) Show(req ShowRequest) (*Response, error) {
+	data, _ := json.Marshal(req)
+	return c.SendMessage(Message{Type: MessageTypeShow, Data: data})
 }

@@ -127,9 +127,9 @@ func (d *Daemon) HandleRepoAdd(req ipc.RepoAddRequest) ipc.Response {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	// FetchInterval is now managed by config, so we ignore the request value
+	// No more fetch intervals - refresh is manual only
 	repo, err := d.repoManager.AddRepository(req.Name, req.Path, req.DefaultBranch,
-		req.MaxWorktrees, 60) // Default value, will be overridden by config
+		req.MaxWorktrees)
 	if err != nil {
 		return ipc.Response{Success: false, Error: err.Error()}
 	}
@@ -232,6 +232,62 @@ func (d *Daemon) HandleWorktreeList() ipc.Response {
 	}
 
 	return ipc.Response{Success: true, Data: details}
+}
+
+func (d *Daemon) HandleRefresh(req ipc.RefreshRequest) ipc.Response {
+	// Get repository
+	repo, err := d.store.GetRepository(req.RepoName)
+	if err != nil {
+		return ipc.Response{Success: false, Error: fmt.Sprintf("repository '%s' not found", req.RepoName)}
+	}
+
+	// Manually trigger refresh for this repository
+	log.Printf("[INFO] Manually refreshing repository '%s'", repo.Name)
+	
+	// Use the pool's ReconcileWorktrees which handles fetching and updating
+	run, err := d.pool.ReconcileWorktrees(repo)
+	if err != nil {
+		return ipc.Response{Success: false, Error: fmt.Sprintf("refresh failed: %v", err)}
+	}
+
+	// Update last fetch time
+	if err := d.store.UpdateRepositoryLastFetch(repo.Name, time.Now()); err != nil {
+		log.Printf("[ERROR] Failed to update last fetch time: %v", err)
+	}
+
+	result := map[string]interface{}{
+		"repository": repo.Name,
+		"worktrees_updated": run.Created,
+		"worktrees_cleaned": run.Cleaned,
+	}
+
+	return ipc.Response{Success: true, Data: result}
+}
+
+func (d *Daemon) HandleShow(req ipc.ShowRequest) ipc.Response {
+	// Try to get worktree by ID or name
+	worktree, err := d.store.GetWorktree(req.WorktreeID)
+	if err != nil {
+		// Try by name
+		worktree, err = d.store.GetWorktreeByName(req.WorktreeID)
+		if err != nil {
+			return ipc.Response{Success: false, Error: fmt.Sprintf("worktree '%s' not found", req.WorktreeID)}
+		}
+	}
+
+	// Get repository info
+	repo, err := d.store.GetRepositoryByID(worktree.RepoID)
+	if err != nil {
+		return ipc.Response{Success: false, Error: fmt.Sprintf("repository not found for worktree")}
+	}
+
+	// Create detail response
+	detail := models.WorktreeDetail{
+		Worktree:   worktree,
+		Repository: repo,
+	}
+
+	return ipc.Response{Success: true, Data: detail}
 }
 
 func CheckDaemonRunning(socketPath string) bool {

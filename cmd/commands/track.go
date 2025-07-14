@@ -35,7 +35,6 @@ func NewTrackCmd() *cobra.Command {
 				Path:          path,
 				MaxWorktrees:  trackMaxWorktrees,
 				DefaultBranch: trackDefaultBranch,
-				FetchInterval: 60, // Default value, will be ignored by daemon
 			}
 
 			resp, err := client.RepoAdd(req)

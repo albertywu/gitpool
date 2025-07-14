@@ -114,7 +114,6 @@ gitpool track NAME PATH [OPTIONS]
 **Options:**
 - `--max INTEGER`: Maximum worktrees in pool (default: 5)
 - `--default-branch BRANCH`: Default branch for worktrees (default: repository's HEAD)
-- `--fetch-interval DURATION`: How often to fetch updates (default: 1h)
 
 **Examples:**
 ```bash
@@ -124,8 +123,6 @@ gitpool track my-app ~/code/my-app
 # With custom settings
 gitpool track web-service ~/repos/web-service --max 10 --default-branch develop
 
-# Custom fetch interval
-gitpool track api ~/work/api --fetch-interval 30m
 ```
 
 #### `gitpool untrack`
@@ -145,6 +142,26 @@ gitpool untrack my-app
 
 # Force untracking
 gitpool untrack my-app --force
+```
+
+#### `gitpool refresh`
+Manually fetch updates from remote and refresh idle worktrees.
+
+```bash
+gitpool refresh <NAME>
+```
+
+**Arguments:**
+- `NAME`: Repository name to refresh
+
+**What it does:**
+- Fetches all updates from the remote repository
+- Updates all idle worktrees to the latest commit on the default branch
+- Does NOT affect claimed/in-use worktrees
+
+**Example:**
+```bash
+gitpool refresh my-app
 ```
 
 #### `gitpool list`
@@ -234,16 +251,8 @@ reconciliation_interval: 1m  # How often daemon checks for work
 log_level: info              # Log level (debug, info, warn, error)
 data_dir: ~/.gitpool         # Data directory
 
-# Per-repository settings
-repos:
-  my-app:
-    fetch_interval: 5m       # Override default fetch interval
-    max_worktrees: 8         # Override --max from add command
-    default_branch: develop  # Override default branch
-    
-  legacy-service:
-    fetch_interval: 2h       # Less frequent updates
-    max_worktrees: 3         # Smaller pool
+# Note: Per-repository settings are no longer supported
+# Use command-line flags when tracking repositories
 ```
 
 ### Configuration Options
@@ -259,11 +268,9 @@ repos:
 
 #### Repository Settings
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `fetch_interval` | How often to fetch updates | `1h` |
-| `max_worktrees` | Maximum worktrees in pool | `5` |
-| `default_branch` | Default branch for new worktrees | Repository HEAD |
+Repository settings are configured via command-line flags when tracking:
+- `--max`: Maximum worktrees in pool (default: 8)
+- `--default-branch`: Default branch for new worktrees (default: main)
 
 ### Environment Variables
 
@@ -334,7 +341,7 @@ CREATE TABLE repos (
     path TEXT NOT NULL,
     max_worktrees INTEGER NOT NULL,
     default_branch TEXT NOT NULL,
-    fetch_interval INTEGER NOT NULL
+    fetch_interval INTEGER NOT NULL -- Deprecated, refresh is manual only
 );
 
 -- Worktree instances

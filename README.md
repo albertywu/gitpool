@@ -43,6 +43,10 @@ gitpool use my-app --branch feature-xyz
 
 # To cd into the worktree:
 cd $(gitpool use my-app --branch feature-xyz | jq -r .path)
+
+# Or save the worktree ID and query it later:
+WORKTREE_ID=$(gitpool use my-app --branch feature-xyz | jq -r .worktree_id)
+cd $(gitpool show $WORKTREE_ID --format path)
 ```
 
 4. Release a worktree when done:
@@ -58,10 +62,12 @@ gitpool release a91b6fc1-1234-5678-90ab-cdef12345678
 
 - `gitpool track <name> <path>` - Track a Git repository
 - `gitpool untrack <name>` - Stop tracking a repository
+- `gitpool refresh <name>` - Fetch updates and refresh idle worktrees
 - `gitpool list` - List all worktrees with detailed status
 
 - `gitpool use <name> --branch <branch>` - Use an available worktree with a unique branch name
 - `gitpool release <worktree-id>` - Return a worktree to the pool
+- `gitpool show <worktree-id>` - Get details about a specific worktree
 
 ## Examples
 
@@ -114,10 +120,13 @@ The `gitpool list` command shows:
 
 Example output:
 ```
-ID                                    WORKSPACE       REPO     STATUS    MAX  BRANCH    FETCH
-────────────────────────────────────  ─────────────   ──────   ────────  ───  ────────  ──────
-a91b6fc1-1234-5678-90ab-cdef12345678  feature-xyz     my-app   IN-USE    8    develop   1h
-b82c7de2-2345-6789-01bc-def234567890  UNCLAIMED       my-app   IDLE      8    develop   1h
+ID                                    WORKSPACE       REPO            STATUS    MAX  BRANCH          CREATED_AT
+────────────────────────────────────  ─────────────   ─────────────   ────────  ───  ──────────────  ─────────────────────
+a91b6fc1-1234-5678-90ab-cdef12345678  feature-xyz     backend-api     IN-USE    10   feature-xyz     2024-01-14 09:30:15
+c73d8ef3-3456-789a-12cd-ef3456789012  hotfix-123      backend-api     IN-USE    10   hotfix-123      2024-01-14 08:45:10
+b82c7de2-2345-6789-01bc-def234567890  UNCLAIMED       backend-api     IDLE      10   (detached)      2024-01-14 09:15:22
+e55fa0b5-5678-9abc-34ef-0b5678901234  experiment-ui   frontend-app    IN-USE    8    experiment-ui   2024-01-14 09:20:05
+d64e9fa4-4567-89ab-23de-fa4567890123  UNCLAIMED       frontend-app    IDLE      8    (detached)      2024-01-14 09:25:18
 ```
 
 ## Configuration
