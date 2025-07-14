@@ -7,18 +7,18 @@ This directory contains integration tests for the gitpool CLI tool. These tests 
 The integration test suite covers all major CLI commands:
 
 ### Daemon Commands
-- `gitpool daemon start` - Starting the background daemon
-- `gitpool daemon status` - Checking daemon status
+- `gitpool start` - Starting the background daemon
+- `gitpool status` - Checking daemon status
 
 ### Repository Management
-- `gitpool repo add` - Adding repositories with various configurations
-- `gitpool repo list` - Listing registered repositories
-- `gitpool repo remove` - Removing repositories
+- `gitpool add` - Adding repositories with various configurations
+- `gitpool list` - Listing registered repositories
+- `gitpool remove` - Removing repositories
 
 ### Worktree Operations
-- `gitpool claim --repo <name>` - Claiming worktrees (returns both ID and path)
+- `gitpool use <repo> --branch <branch>` - Using worktrees (returns JSON with ID and path)
 - `gitpool release <worktree-id>` - Releasing worktrees back to pool
-- `gitpool pool status` - Checking pool status and statistics
+- `gitpool status` - Checking pool status and statistics
 
 ### Full Workflow Tests
 - Complete end-to-end workflows combining multiple commands
@@ -78,7 +78,7 @@ Tests repository management:
 
 ### TestWorktreeCommands
 Tests worktree operations:
-- Claiming worktrees from repository pools (verifies both ID and path output)
+- Using worktrees from repository pools (verifies JSON output with ID and path)
 - Checking pool status and statistics
 - Releasing worktrees back to the pool
 - Verifying pool state after operations

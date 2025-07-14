@@ -4,14 +4,14 @@ GitPool is a CLI + daemon tool for managing a pool of pre-initialized Git worktr
 
 ## What is GitPool?
 
-GitPool maintains a pool of pre-initialized Git worktrees that can be instantly claimed and released. Instead of waiting for `git clone` or `git fetch` operations, developers and CI systems get immediate access to ready-to-use worktrees.
+GitPool maintains a pool of pre-initialized Git worktrees that can be instantly used and released. Instead of waiting for `git clone` or `git fetch` operations, developers and CI systems get immediate access to ready-to-use worktrees.
 
 ## Why Use GitPool?
 
 - **Instant checkouts**: No waiting for git operations - worktrees are pre-fetched and ready
 - **Perfect for CI/CD**: Dramatically speed up build and test pipelines 
 - **Resource efficient**: Worktrees share Git objects with the source repository
-- **Safe isolation**: Each claimed worktree is independent and protected from updates
+- **Safe isolation**: Each used worktree is independent and protected from updates
 - **Automatic maintenance**: Background daemon keeps worktrees fresh and pool at capacity
 
 ## Installation
@@ -32,12 +32,17 @@ gitpool start
 gitpool add my-app ~/repos/my-app --max 8 --default-branch develop
 ```
 
-3. Claim a worktree:
+3. Use a worktree:
 ```bash
-gitpool claim my-app --branch feature-xyz
-# Output (two lines):
-# a91b6fc1-1234-5678-90ab-cdef12345678
-# /home/user/.gitpool/worktrees/my-app/a91b6fc1-1234-5678-90ab-cdef12345678
+gitpool use my-app --branch feature-xyz
+# Output (JSON):
+# {
+#   "worktree_id": "a91b6fc1-1234-5678-90ab-cdef12345678",
+#   "path": "/home/user/.gitpool/worktrees/my-app/a91b6fc1-1234-5678-90ab-cdef12345678"
+# }
+
+# To cd into the worktree:
+cd $(gitpool use my-app --branch feature-xyz | jq -r .path)
 ```
 
 4. Release a worktree when done:
@@ -60,7 +65,7 @@ gitpool status
 - `gitpool remove <name>` - Remove a repository
 - `gitpool list` - List all worktrees with detailed status
 
-- `gitpool claim <name> --branch <name>` - Claim an available worktree with a unique branch name
+- `gitpool use <name> --branch <branch>` - Use an available worktree with a unique branch name
 - `gitpool release <worktree-id>` - Return a worktree to the pool
 
 ## Examples
@@ -68,9 +73,9 @@ gitpool status
 ### CI/CD Pipeline Integration
 ```bash
 # In your CI script
-OUTPUT=$(gitpool claim my-app --branch "ci-run-${BUILD_ID}")
-WORKTREE_ID=$(echo "$OUTPUT" | head -n1)
-WORKTREE_PATH=$(echo "$OUTPUT" | tail -n1)
+OUTPUT=$(gitpool use my-app --branch "ci-run-${BUILD_ID}")
+WORKTREE_ID=$(echo "$OUTPUT" | jq -r .worktree_id)
+WORKTREE_PATH=$(echo "$OUTPUT" | jq -r .path)
 
 cd "$WORKTREE_PATH"
 make test
@@ -80,9 +85,9 @@ gitpool release $WORKTREE_ID
 ### Development Workflow
 ```bash
 # Quick experimentation without affecting main workspace
-OUTPUT=$(gitpool claim my-project --branch experiment-feature)
-WORKTREE_ID=$(echo "$OUTPUT" | head -n1)
-WORKTREE_PATH=$(echo "$OUTPUT" | tail -n1)
+OUTPUT=$(gitpool use my-project --branch experiment-feature)
+WORKTREE_ID=$(echo "$OUTPUT" | jq -r .worktree_id)
+WORKTREE_PATH=$(echo "$OUTPUT" | jq -r .path)
 
 cd "$WORKTREE_PATH"
 # ... make changes, test ideas ...
@@ -93,8 +98,7 @@ gitpool release $WORKTREE_ID
 ```bash
 # Run tests in parallel across multiple worktrees
 for i in {1..4}; do
-  OUTPUT=$(gitpool claim my-app --branch "test-suite-$i")
-  WORKTREE_PATH=$(echo "$OUTPUT" | tail -n1)
+  WORKTREE_PATH=$(gitpool use my-app --branch "test-suite-$i" | jq -r .path)
   (cd "$WORKTREE_PATH" && make test-suite-$i) &
 done
 wait
@@ -102,14 +106,14 @@ wait
 
 ## Branch Management
 
-GitPool requires a unique branch name when claiming a workspace:
+GitPool requires a unique branch name when using a workspace:
 
 - **Branch names must be unique** within a repository - no two active workspaces can use the same branch
 - **Branch validation** ensures names follow Git conventions (no spaces, special characters, etc.)
 - **Automatic cleanup** - branch associations are cleared when workspaces are released
 
 The `gitpool list` command shows:
-- **Claimed workspaces**: Display the branch name in yellow as a clickable link
+- **In-use workspaces**: Display the branch name in yellow as a clickable link
 - **Unclaimed workspaces**: Display "UNCLAIMED" in gray as a clickable link
 - All links open the workspace directory when clicked (Cmd/Ctrl+click in supported terminals)
 

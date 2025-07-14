@@ -61,12 +61,12 @@ The SQLite database tracks:
 ## Backup and Recovery
 
 To backup gitpool state:
-1. Stop the daemon: `gitpool daemon stop`
+1. Stop the daemon: `gitpool stop`
 2. Copy `~/.gitpool/worktrees/gitpool.db`
 3. Optionally copy `~/.gitpool/config.yaml` (if it exists)
 
 To restore:
 1. Ensure daemon is stopped
 2. Restore the database file
-3. Start daemon: `gitpool daemon start`
+3. Start daemon: `gitpool start`
 4. Daemon will reconcile any missing worktrees automatically
