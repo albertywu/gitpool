@@ -134,7 +134,7 @@ func (a *Allocator) ClaimWorktree(worktree *models.Worktree, branch string) (*mo
 
 	// Check if the branch exists locally or remotely
 	var checkoutCmd *exec.Cmd
-	
+
 	// Try to checkout the branch (will create it from origin if it doesn't exist locally)
 	checkoutCmd = exec.Command("git", "-C", worktree.Path, "checkout", "-B", branch, fmt.Sprintf("origin/%s", branch))
 	if output, err := checkoutCmd.CombinedOutput(); err != nil {

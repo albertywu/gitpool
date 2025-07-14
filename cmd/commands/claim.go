@@ -11,13 +11,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewUseCmd() *cobra.Command {
+func NewClaimCmd() *cobra.Command {
 	var branch string
 
 	cmd := &cobra.Command{
-		Use:   "use <repo-name> --branch <branch-name>",
-		Short: "Use a worktree from the pool",
-		Long: `Use an available worktree from the pool for the specified repository.
+		Use:   "claim <repo-name> --branch <branch-name>",
+		Short: "Claim a worktree from the pool",
+		Long: `Claim an available worktree from the pool for the specified repository.
 
 The --branch flag is required and must be a valid git branch name.
 Branch names must be unique within the repository's workspaces.
@@ -26,7 +26,7 @@ The command outputs JSON with the worktree ID and path to STDOUT.
 Error messages are printed to STDERR.
 
 Example:
-  gitpool use my-app --branch feature-xyz
+  gitpool claim my-app --branch feature-xyz
   
 Output:
   {
@@ -36,10 +36,10 @@ Output:
   
 Usage with jq:
   # Get just the path
-  gitpool use my-app --branch feature-xyz | jq -r .path
+  gitpool claim my-app --branch feature-xyz | jq -r .path
   
   # CD into the worktree
-  cd $(gitpool use my-app --branch feature-xyz | jq -r .path)`,
+  cd $(gitpool claim my-app --branch feature-xyz | jq -r .path)`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repoName := args[0]
@@ -71,7 +71,7 @@ Usage with jq:
 			}
 
 			if !resp.Success {
-				internal.PrintError("Failed to use worktree: %s", resp.Error)
+				internal.PrintError("Failed to claim worktree: %s", resp.Error)
 				return fmt.Errorf("claim failed")
 			}
 

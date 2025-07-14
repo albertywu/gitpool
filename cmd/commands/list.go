@@ -61,13 +61,22 @@ func NewListCmd() *cobra.Command {
 				return nil
 			}
 
-			// Sort worktrees: first by repo name (alphabetically), then by creation time (descending)
+			// Sort worktrees: first by status (claimed before unclaimed), then by repo name, then by creation time
 			sort.Slice(details, func(i, j int) bool {
-				// First, compare by repository name
+				// First, prioritize claimed (IN-USE) worktrees
+				iClaimed := details[i].Worktree.Status == models.WorktreeStatusInUse
+				jClaimed := details[j].Worktree.Status == models.WorktreeStatusInUse
+
+				if iClaimed != jClaimed {
+					return iClaimed // true (claimed) comes before false (unclaimed)
+				}
+
+				// Then, compare by repository name
 				if details[i].Repository.Name != details[j].Repository.Name {
 					return details[i].Repository.Name < details[j].Repository.Name
 				}
-				// If same repo, sort by creation time (newer first)
+
+				// If same repo and same status, sort by creation time (newer first)
 				return details[i].Worktree.CreatedAt.After(details[j].Worktree.CreatedAt)
 			})
 
@@ -76,10 +85,7 @@ func NewListCmd() *cobra.Command {
 			idWidth := len("ID")
 			workspaceWidth := len("WORKSPACE")
 			repoWidth := len("REPO")
-			statusWidth := len("STATUS")
-			maxWidth := len("MAX")
-			branchWidth := len("BRANCH")
-			createdAtWidth := len("CREATED_AT")
+			claimedAtWidth := len("CLAIMED_AT")
 
 			// Find maximum widths based on actual data
 			for _, detail := range details {
@@ -107,51 +113,24 @@ func NewListCmd() *cobra.Command {
 					repoWidth = len(repo.Name)
 				}
 
-				// Status column
-				statusLen := 0
-				switch wt.Status {
-				case models.WorktreeStatusInUse:
-					statusLen = len("IN-USE")
-				case models.WorktreeStatusCorrupt:
-					statusLen = len("CORRUPT")
-				default:
-					statusLen = len("IDLE")
-				}
-				if statusLen > statusWidth {
-					statusWidth = statusLen
-				}
-
-				// MAX column
-				maxStr := fmt.Sprintf("%d", repo.MaxWorktrees)
-				if len(maxStr) > maxWidth {
-					maxWidth = len(maxStr)
-				}
-
-				// Branch column - check worktree's actual branch
-				var branchLen int
-				if wt.Branch != nil && *wt.Branch != "" {
-					branchLen = len(*wt.Branch)
+				// Claimed at column
+				var claimedAtLen int
+				if wt.Status == models.WorktreeStatusInUse && wt.LeasedAt != nil {
+					timeSince := time.Since(*wt.LeasedAt)
+					if timeSince < time.Minute {
+						claimedAtLen = len("just now")
+					} else if timeSince < time.Hour {
+						claimedAtLen = len(fmt.Sprintf("%dm ago", int(timeSince.Minutes())))
+					} else if timeSince < 24*time.Hour {
+						claimedAtLen = len(fmt.Sprintf("%dh ago", int(timeSince.Hours())))
+					} else {
+						claimedAtLen = len(fmt.Sprintf("%dd ago", int(timeSince.Hours()/24)))
+					}
 				} else {
-					branchLen = len(repo.DefaultBranch)
+					claimedAtLen = len("-")
 				}
-				if branchLen > branchWidth {
-					branchWidth = branchLen
-				}
-
-				// Created at column
-				timeSince := time.Since(wt.CreatedAt)
-				var createdAtLen int
-				if timeSince < time.Minute {
-					createdAtLen = len("just now")
-				} else if timeSince < time.Hour {
-					createdAtLen = len(fmt.Sprintf("%dm ago", int(timeSince.Minutes())))
-				} else if timeSince < 24*time.Hour {
-					createdAtLen = len(fmt.Sprintf("%dh ago", int(timeSince.Hours())))
-				} else {
-					createdAtLen = len(fmt.Sprintf("%dd ago", int(timeSince.Hours()/24)))
-				}
-				if createdAtLen > createdAtWidth {
-					createdAtWidth = createdAtLen
+				if claimedAtLen > claimedAtWidth {
+					claimedAtWidth = claimedAtLen
 				}
 			}
 
@@ -159,14 +138,11 @@ func NewListCmd() *cobra.Command {
 			idWidth += 2
 			workspaceWidth += 2
 			repoWidth += 2
-			statusWidth += 2
-			maxWidth += 2
-			branchWidth += 2
-			createdAtWidth += 2
+			claimedAtWidth += 2
 
 			// Print beautiful header
 			fmt.Printf("\n%s%sWorktree Pool Status%s\n", colorBold, colorCyan, colorReset)
-			totalWidth := idWidth + workspaceWidth + repoWidth + statusWidth + maxWidth + branchWidth + createdAtWidth + 12 // 12 for spacing
+			totalWidth := idWidth + workspaceWidth + repoWidth + claimedAtWidth + 6 // 6 for spacing
 			fmt.Printf("%s%s%s\n\n", colorGray, strings.Repeat("─", totalWidth), colorReset)
 
 			// Helper function to pad string to fixed width
@@ -178,27 +154,21 @@ func NewListCmd() *cobra.Command {
 			}
 
 			// Print table header
-			fmt.Printf("%s%s%-*s  %-*s  %-*s  %-*s  %-*s  %-*s  %-*s%s\n",
+			fmt.Printf("%s%s%-*s  %-*s  %-*s  %-*s%s\n",
 				colorBold, colorGray,
 				idWidth, "ID",
 				workspaceWidth, "WORKSPACE",
 				repoWidth, "REPO",
-				statusWidth, "STATUS",
-				maxWidth, "MAX",
-				branchWidth, "BRANCH",
-				createdAtWidth, "CREATED_AT",
+				claimedAtWidth, "CLAIMED_AT",
 				colorReset)
 
 			// Print separator
-			fmt.Printf("%s%s  %s  %s  %s  %s  %s  %s%s\n",
+			fmt.Printf("%s%s  %s  %s  %s%s\n",
 				colorGray,
 				strings.Repeat("─", idWidth),
 				strings.Repeat("─", workspaceWidth),
 				strings.Repeat("─", repoWidth),
-				strings.Repeat("─", statusWidth),
-				strings.Repeat("─", maxWidth),
-				strings.Repeat("─", branchWidth),
-				strings.Repeat("─", createdAtWidth),
+				strings.Repeat("─", claimedAtWidth),
 				colorReset)
 
 			// Print worktrees
@@ -206,28 +176,22 @@ func NewListCmd() *cobra.Command {
 				wt := detail.Worktree
 				repo := detail.Repository
 
-				// Choose color based on status
-				statusColor := colorGreen
-				statusText := "IDLE"
-				if wt.Status == models.WorktreeStatusInUse {
-					statusColor = colorYellow
-					statusText = "IN-USE"
-				} else if wt.Status == models.WorktreeStatusCorrupt {
-					statusColor = colorRed
-					statusText = "CORRUPT"
-				}
-
-				// Calculate time since creation
-				var createdAtDisplay string
-				timeSince := time.Since(wt.CreatedAt)
-				if timeSince < time.Minute {
-					createdAtDisplay = "just now"
-				} else if timeSince < time.Hour {
-					createdAtDisplay = fmt.Sprintf("%dm ago", int(timeSince.Minutes()))
-				} else if timeSince < 24*time.Hour {
-					createdAtDisplay = fmt.Sprintf("%dh ago", int(timeSince.Hours()))
+				// Calculate time since claimed
+				var claimedAtDisplay string
+				if wt.Status == models.WorktreeStatusInUse && wt.LeasedAt != nil {
+					timeSince := time.Since(*wt.LeasedAt)
+					if timeSince < time.Minute {
+						claimedAtDisplay = "just now"
+					} else if timeSince < time.Hour {
+						claimedAtDisplay = fmt.Sprintf("%dm ago", int(timeSince.Minutes()))
+					} else if timeSince < 24*time.Hour {
+						claimedAtDisplay = fmt.Sprintf("%dh ago", int(timeSince.Hours()))
+					} else {
+						claimedAtDisplay = fmt.Sprintf("%dd ago", int(timeSince.Hours()/24))
+					}
 				} else {
-					createdAtDisplay = fmt.Sprintf("%dd ago", int(timeSince.Hours()/24))
+					// Show dash for unclaimed worktrees
+					claimedAtDisplay = "-"
 				}
 
 				// Format workspace display based on status
@@ -250,47 +214,19 @@ func NewListCmd() *cobra.Command {
 				terminalLink := fmt.Sprintf("\033]8;;file://%s\033\\%s%s%s\033]8;;\033\\",
 					wt.Path, workspaceColor, padRight(workspaceDisplay, workspaceWidth), colorReset)
 
-				// Determine which branch to display
-				var branchDisplay string
-				if wt.Branch != nil && *wt.Branch != "" {
-					branchDisplay = *wt.Branch
-				} else {
-					branchDisplay = repo.DefaultBranch
-				}
-
 				// Format the row with fixed widths
-				fmt.Printf("%s%-*s%s  %s  %s%-*s%s  %s%-*s%s  %-*d  %s%-*s%s  %s%-*s%s\n",
+				fmt.Printf("%s%-*s%s  %s  %s%-*s%s  %s%-*s%s\n",
 					colorBlue, idWidth, wt.Name, colorReset,
 					terminalLink,
 					colorPurple, repoWidth, repo.Name, colorReset,
-					statusColor, statusWidth, statusText, colorReset,
-					maxWidth, repo.MaxWorktrees,
-					colorCyan, branchWidth, branchDisplay, colorReset,
-					colorGray, createdAtWidth, createdAtDisplay, colorReset)
+					colorGray, claimedAtWidth, claimedAtDisplay, colorReset)
 			}
 
 			// Print summary
-			idle := 0
-			inUse := 0
-			corrupt := 0
-			for _, detail := range details {
-				switch detail.Worktree.Status {
-				case models.WorktreeStatusIdle:
-					idle++
-				case models.WorktreeStatusInUse:
-					inUse++
-				case models.WorktreeStatusCorrupt:
-					corrupt++
-				}
-			}
-
 			fmt.Printf("\n%s%s%s\n", colorGray, strings.Repeat("─", totalWidth), colorReset)
-			fmt.Printf("%sSummary:%s Total: %s%d%s | Idle: %s%d%s | In-Use: %s%d%s | Corrupt: %s%d%s\n\n",
+			fmt.Printf("%sSummary:%s Total: %s%d%s worktrees\n\n",
 				colorBold, colorReset,
-				colorBold, len(details), colorReset,
-				colorGreen, idle, colorReset,
-				colorYellow, inUse, colorReset,
-				colorRed, corrupt, colorReset)
+				colorBold, len(details), colorReset)
 
 			return nil
 		},

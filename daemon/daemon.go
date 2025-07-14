@@ -243,7 +243,7 @@ func (d *Daemon) HandleRefresh(req ipc.RefreshRequest) ipc.Response {
 
 	// Manually trigger refresh for this repository
 	log.Printf("[INFO] Manually refreshing repository '%s'", repo.Name)
-	
+
 	// Use the pool's ReconcileWorktrees which handles fetching and updating
 	run, err := d.pool.ReconcileWorktrees(repo)
 	if err != nil {
@@ -256,7 +256,7 @@ func (d *Daemon) HandleRefresh(req ipc.RefreshRequest) ipc.Response {
 	}
 
 	result := map[string]interface{}{
-		"repository": repo.Name,
+		"repository":        repo.Name,
 		"worktrees_updated": run.Created,
 		"worktrees_cleaned": run.Cleaned,
 	}

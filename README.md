@@ -4,7 +4,7 @@ GitPool is a CLI + daemon tool for managing a pool of pre-initialized Git worktr
 
 ## What is GitPool?
 
-GitPool maintains a pool of pre-initialized Git worktrees that can be instantly used and released. Instead of waiting for `git clone` or `git fetch` operations, developers and CI systems get immediate access to ready-to-use worktrees.
+GitPool maintains a pool of pre-initialized Git worktrees that can be instantly used and released. Instead of waiting on slow `git clone` or `git fetch` or `git checkout` operations, developers and CI systems get immediate access to ready-to-use worktrees.
 
 ## Why Use GitPool?
 
@@ -32,9 +32,9 @@ gitpool start
 gitpool track my-app ~/repos/my-app --max 8 --default-branch develop
 ```
 
-3. Use a worktree:
+3. Claim a worktree:
 ```bash
-gitpool use my-app --branch feature-xyz
+gitpool claim my-app --branch feature-xyz
 # Output (JSON):
 # {
 #   "worktree_id": "a91b6fc1-1234-5678-90ab-cdef12345678",
@@ -42,10 +42,10 @@ gitpool use my-app --branch feature-xyz
 # }
 
 # To cd into the worktree:
-cd $(gitpool use my-app --branch feature-xyz | jq -r .path)
+cd $(gitpool claim my-app --branch feature-xyz | jq -r .path)
 
 # Or save the worktree ID and query it later:
-WORKTREE_ID=$(gitpool use my-app --branch feature-xyz | jq -r .worktree_id)
+WORKTREE_ID=$(gitpool claim my-app --branch feature-xyz | jq -r .worktree_id)
 cd $(gitpool show $WORKTREE_ID --format path)
 ```
 
@@ -65,7 +65,7 @@ gitpool release a91b6fc1-1234-5678-90ab-cdef12345678
 - `gitpool refresh <name>` - Fetch updates and refresh idle worktrees
 - `gitpool list` - List all worktrees with detailed status
 
-- `gitpool use <name> --branch <branch>` - Use an available worktree with a unique branch name
+- `gitpool claim <name> --branch <branch>` - Claim an available worktree with a unique branch name
 - `gitpool release <worktree-id>` - Return a worktree to the pool
 - `gitpool show <worktree-id>` - Get details about a specific worktree
 
@@ -74,7 +74,7 @@ gitpool release a91b6fc1-1234-5678-90ab-cdef12345678
 ### CI/CD Pipeline Integration
 ```bash
 # In your CI script
-OUTPUT=$(gitpool use my-app --branch "ci-run-${BUILD_ID}")
+OUTPUT=$(gitpool claim my-app --branch "ci-run-${BUILD_ID}")
 WORKTREE_ID=$(echo "$OUTPUT" | jq -r .worktree_id)
 WORKTREE_PATH=$(echo "$OUTPUT" | jq -r .path)
 
@@ -86,7 +86,7 @@ gitpool release $WORKTREE_ID
 ### Development Workflow
 ```bash
 # Quick experimentation without affecting main workspace
-OUTPUT=$(gitpool use my-project --branch experiment-feature)
+OUTPUT=$(gitpool claim my-project --branch experiment-feature)
 WORKTREE_ID=$(echo "$OUTPUT" | jq -r .worktree_id)
 WORKTREE_PATH=$(echo "$OUTPUT" | jq -r .path)
 
@@ -99,7 +99,7 @@ gitpool release $WORKTREE_ID
 ```bash
 # Run tests in parallel across multiple worktrees
 for i in {1..4}; do
-  WORKTREE_PATH=$(gitpool use my-app --branch "test-suite-$i" | jq -r .path)
+  WORKTREE_PATH=$(gitpool claim my-app --branch "test-suite-$i" | jq -r .path)
   (cd "$WORKTREE_PATH" && make test-suite-$i) &
 done
 wait
@@ -107,26 +107,28 @@ wait
 
 ## Branch Management
 
-GitPool requires a unique branch name when using a workspace:
+GitPool requires a unique branch name when claiming a workspace:
 
 - **Branch names must be unique** within a repository - no two active workspaces can use the same branch
 - **Branch validation** ensures names follow Git conventions (no spaces, special characters, etc.)
 - **Automatic cleanup** - branch associations are cleared when workspaces are released
 
 The `gitpool list` command shows:
-- **In-use workspaces**: Display the branch name in yellow as a clickable link
+- **Sorting**: Claimed worktrees appear first, followed by unclaimed ones
+- **Claimed workspaces**: Display the branch name in yellow as a clickable link
 - **Unclaimed workspaces**: Display "UNCLAIMED" in gray as a clickable link
+- **Claimed_at column**: Shows when a worktree was claimed, or "-" for unclaimed worktrees
 - All links open the workspace directory when clicked (Cmd/Ctrl+click in supported terminals)
 
 Example output:
 ```
-ID                                    WORKSPACE       REPO            STATUS    MAX  BRANCH          CREATED_AT
-────────────────────────────────────  ─────────────   ─────────────   ────────  ───  ──────────────  ─────────────────────
-a91b6fc1-1234-5678-90ab-cdef12345678  feature-xyz     backend-api     IN-USE    10   feature-xyz     2024-01-14 09:30:15
-c73d8ef3-3456-789a-12cd-ef3456789012  hotfix-123      backend-api     IN-USE    10   hotfix-123      2024-01-14 08:45:10
-b82c7de2-2345-6789-01bc-def234567890  UNCLAIMED       backend-api     IDLE      10   (detached)      2024-01-14 09:15:22
-e55fa0b5-5678-9abc-34ef-0b5678901234  experiment-ui   frontend-app    IN-USE    8    experiment-ui   2024-01-14 09:20:05
-d64e9fa4-4567-89ab-23de-fa4567890123  UNCLAIMED       frontend-app    IDLE      8    (detached)      2024-01-14 09:25:18
+ID                                    WORKSPACE       REPO            CLAIMED_AT
+────────────────────────────────────  ─────────────   ─────────────   ──────────────
+a91b6fc1-1234-5678-90ab-cdef12345678  feature-xyz     backend-api     5m ago
+c73d8ef3-3456-789a-12cd-ef3456789012  hotfix-123      backend-api     1h ago
+e55fa0b5-5678-9abc-34ef-0b5678901234  experiment-ui   frontend-app    30m ago
+b82c7de2-2345-6789-01bc-def234567890  UNCLAIMED       backend-api     -
+d64e9fa4-4567-89ab-23de-fa4567890123  UNCLAIMED       frontend-app    -
 ```
 
 ## Configuration

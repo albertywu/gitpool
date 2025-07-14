@@ -71,7 +71,6 @@ func LoadWithCustomPaths(configDir, worktreeDir, socketPath string) (*Config, er
 	return &cfg, nil
 }
 
-
 // GetWorktreeDir returns the hardcoded worktree directory
 func GetWorktreeDir() string {
 	return filepath.Join(os.Getenv("HOME"), ".gitpool", "worktrees")

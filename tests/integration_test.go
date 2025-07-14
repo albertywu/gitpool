@@ -301,10 +301,10 @@ func TestWorktreeCommands(t *testing.T) {
 
 	var worktreeID string
 
-	t.Run("use worktree", func(t *testing.T) {
-		output, err := tc.RunGitpoolCommand("use", "test-repo", "--branch", "main")
+	t.Run("claim worktree", func(t *testing.T) {
+		output, err := tc.RunGitpoolCommand("claim", "test-repo", "--branch", "main")
 		if err != nil {
-			t.Fatalf("Failed to use worktree: %v\nOutput: %s", err, output)
+			t.Fatalf("Failed to claim worktree: %v\nOutput: %s", err, output)
 		}
 
 		output = strings.TrimSpace(output)
@@ -401,9 +401,9 @@ func TestFullWorkflow(t *testing.T) {
 	// Claim multiple worktrees
 	var worktreeIDs []string
 	for i := 0; i < 2; i++ {
-		output, err := tc.RunGitpoolCommand("use", "workflow-repo", "--branch", fmt.Sprintf("branch-%d", i))
+		output, err := tc.RunGitpoolCommand("claim", "workflow-repo", "--branch", fmt.Sprintf("branch-%d", i))
 		if err != nil {
-			t.Fatalf("Failed to use worktree %d: %v", i, err)
+			t.Fatalf("Failed to claim worktree %d: %v", i, err)
 		}
 		var result map[string]string
 		if err := json.Unmarshal([]byte(strings.TrimSpace(output)), &result); err == nil {

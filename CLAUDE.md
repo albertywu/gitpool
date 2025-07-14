@@ -53,14 +53,14 @@ Tests use temporary directories (`/tmp/gitpool-test-*`) and clean up automatical
 - `gitpool track <repo-name> <repo-path>`: Track repository (use --max flag for worktree count, defaults to 8)
 - `gitpool untrack <repo-name>`: Stop tracking repository and clean up worktrees
 - `gitpool refresh <repo-name>`: Manually fetch updates and refresh idle worktrees
-- `gitpool use <repo> --branch <branch>`: Get worktree (returns JSON)
-- `gitpool release <worktree-id>`: Return worktree to pool
+- `gitpool claim <repo> --branch <branch>`: Claim worktree (returns JSON)
+- `gitpool release <worktree-id>`: Release worktree back to pool
 - `gitpool show <worktree-id>`: Get details about a specific worktree (supports --format path)
 - `gitpool list`: Show all worktrees
 
 ## Development Notes
 
 1. **Branch uniqueness**: Each branch name must be unique per repository
-2. **JSON output**: The `use` command returns JSON with worktree ID and path for scripting
+2. **JSON output**: The `claim` command returns JSON with worktree ID and path for scripting
 3. **Error handling**: Use descriptive errors and proper cleanup in defer blocks
 4. **Testing**: Always run `make test` before committing changes
