@@ -22,7 +22,7 @@ func NewManager(store *db.Store) *Manager {
 	}
 }
 
-func (m *Manager) AddRepository(name, path, defaultBranch string, maxWorktrees int) (*models.Repository, error) {
+func (m *Manager) AddRepository(name, path, baseBranch string, maxWorktrees int) (*models.Repository, error) {
 	// Validate repository path
 	absPath, err := filepath.Abs(path)
 	if err != nil {
@@ -33,8 +33,18 @@ func (m *Manager) AddRepository(name, path, defaultBranch string, maxWorktrees i
 		return nil, fmt.Errorf("repository validation failed: %w", err)
 	}
 
-	// Validate default branch
-	if err := m.validator.ValidateBranch(absPath, defaultBranch); err != nil {
+	// Auto-detect base branch if not provided
+	if baseBranch == "" {
+		detected, err := m.validator.GetDefaultBranch(absPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to detect base branch: %w", err)
+		}
+		baseBranch = detected
+		log.Printf("[INFO] Auto-detected base branch: %s", baseBranch)
+	}
+
+	// Validate base branch
+	if err := m.validator.ValidateBranch(absPath, baseBranch); err != nil {
 		return nil, fmt.Errorf("branch validation failed: %w", err)
 	}
 
@@ -44,14 +54,14 @@ func (m *Manager) AddRepository(name, path, defaultBranch string, maxWorktrees i
 	}
 
 	// Create repository record - no fetch interval, refresh is manual
-	repo := models.NewRepository(name, absPath, defaultBranch, maxWorktrees, 0)
+	repo := models.NewRepository(name, absPath, baseBranch, maxWorktrees, 0)
 	if err := m.store.CreateRepository(repo); err != nil {
 		return nil, fmt.Errorf("failed to save repository: %w", err)
 	}
 
 	log.Printf("[INFO] Added repo '%s' at %s", name, absPath)
-	log.Printf("[INFO] Max worktrees: %d, Default branch: %s",
-		maxWorktrees, defaultBranch)
+	log.Printf("[INFO] Max worktrees: %d, Base branch: %s",
+		maxWorktrees, baseBranch)
 
 	return repo, nil
 }

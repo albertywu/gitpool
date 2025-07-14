@@ -36,10 +36,10 @@ type Response struct {
 }
 
 type RepoAddRequest struct {
-	Name          string `json:"name"`
-	Path          string `json:"path"`
-	MaxWorktrees  int    `json:"max_worktrees"`
-	DefaultBranch string `json:"default_branch"`
+	Name         string `json:"name"`
+	Path         string `json:"path"`
+	MaxWorktrees int    `json:"max_worktrees"`
+	BaseBranch   string `json:"base_branch"`
 }
 
 type ClaimRequest struct {

@@ -16,8 +16,8 @@ func TestNewRepository(t *testing.T) {
 		t.Errorf("expected path '/path/to/repo', got %s", repo.Path)
 	}
 
-	if repo.DefaultBranch != "main" {
-		t.Errorf("expected default branch 'main', got %s", repo.DefaultBranch)
+	if repo.BaseBranch != "main" {
+		t.Errorf("expected base branch 'main', got %s", repo.BaseBranch)
 	}
 
 	if repo.MaxWorktrees != 8 {

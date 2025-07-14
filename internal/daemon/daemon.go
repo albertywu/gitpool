@@ -128,7 +128,7 @@ func (d *Daemon) HandleRepoAdd(req ipc.RepoAddRequest) ipc.Response {
 	defer d.mu.Unlock()
 
 	// No more fetch intervals - refresh is manual only
-	repo, err := d.repoManager.AddRepository(req.Name, req.Path, req.DefaultBranch,
+	repo, err := d.repoManager.AddRepository(req.Name, req.Path, req.BaseBranch,
 		req.MaxWorktrees)
 	if err != nil {
 		return ipc.Response{Success: false, Error: err.Error()}

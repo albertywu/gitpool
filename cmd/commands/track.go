@@ -10,16 +10,20 @@ import (
 )
 
 var (
-	trackMaxWorktrees  int
-	trackDefaultBranch string
+	trackMaxWorktrees int
+	trackBaseBranch   string
 )
 
 func NewTrackCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "track <repo-name> <repo-path>",
 		Short: "Track a new repository",
-		Long:  `Track a new Git repository with gitpool to create and manage a pool of worktrees.`,
-		Args:  cobra.ExactArgs(2),
+		Long: `Track a new Git repository with gitpool to create and manage a pool of worktrees.
+
+If --base-branch is not specified, gitpool will auto-detect the repository's 
+default branch from the remote HEAD reference. If this fails, you must specify 
+--base-branch explicitly.`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 			path := args[1]
@@ -31,10 +35,10 @@ func NewTrackCmd() *cobra.Command {
 
 			client := ipc.NewClient(cfg.SocketPath)
 			req := ipc.RepoAddRequest{
-				Name:          name,
-				Path:          path,
-				MaxWorktrees:  trackMaxWorktrees,
-				DefaultBranch: trackDefaultBranch,
+				Name:         name,
+				Path:         path,
+				MaxWorktrees: trackMaxWorktrees,
+				BaseBranch:   trackBaseBranch,
 			}
 
 			resp, err := client.RepoAdd(req)
@@ -53,7 +57,7 @@ func NewTrackCmd() *cobra.Command {
 	}
 
 	cmd.Flags().IntVar(&trackMaxWorktrees, "max", 8, "Maximum number of worktrees")
-	cmd.Flags().StringVar(&trackDefaultBranch, "default-branch", "main", "Default branch to checkout")
+	cmd.Flags().StringVar(&trackBaseBranch, "base-branch", "", "Base branch for worktrees (auto-detected if not specified)")
 
 	return cmd
 }

@@ -35,7 +35,7 @@ func (a *Allocator) CreateWorktree(repo *models.Repository) (*models.Worktree, e
 	worktreePath := filepath.Join(repoWorkDir, worktreeName)
 
 	// Create git worktree
-	cmd := exec.Command("git", "-C", repo.Path, "worktree", "add", "--detach", worktreePath, repo.DefaultBranch)
+	cmd := exec.Command("git", "-C", repo.Path, "worktree", "add", "--detach", worktreePath, repo.BaseBranch)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("failed to create worktree: %w\nOutput: %s", err, string(output))
 	}
@@ -102,7 +102,7 @@ func (a *Allocator) UpdateWorktree(repo *models.Repository, worktree *models.Wor
 	}
 
 	// Get the latest commit SHA for the default branch
-	cmd := exec.Command("git", "-C", repo.Path, "rev-parse", fmt.Sprintf("origin/%s", repo.DefaultBranch))
+	cmd := exec.Command("git", "-C", repo.Path, "rev-parse", fmt.Sprintf("origin/%s", repo.BaseBranch))
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("failed to get latest commit SHA: %w", err)
@@ -168,7 +168,7 @@ func (a *Allocator) ReleaseWorktree(worktree *models.Worktree, repo *models.Repo
 	}
 
 	// Checkout back to detached HEAD at the default branch
-	cmd := exec.Command("git", "-C", worktree.Path, "checkout", "--detach", fmt.Sprintf("origin/%s", repo.DefaultBranch))
+	cmd := exec.Command("git", "-C", worktree.Path, "checkout", "--detach", fmt.Sprintf("origin/%s", repo.BaseBranch))
 	if output, err := cmd.CombinedOutput(); err != nil {
 		log.Printf("[WARN] Failed to detach HEAD: %v\nOutput: %s", err, string(output))
 	}

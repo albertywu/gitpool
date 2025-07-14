@@ -98,7 +98,7 @@ func (s *Store) CreateRepository(repo *models.Repository) error {
 	query := `INSERT INTO repositories (id, name, path, max_worktrees, default_branch, fetch_interval, last_fetch_time, created_at)
 			  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 	_, err := s.db.Exec(query, repo.ID.String(), repo.Name, repo.Path, repo.MaxWorktrees,
-		repo.DefaultBranch, repo.FetchInterval, repo.LastFetchTime, repo.CreatedAt)
+		repo.BaseBranch, repo.FetchInterval, repo.LastFetchTime, repo.CreatedAt)
 	return err
 }
 
@@ -110,7 +110,7 @@ func (s *Store) GetRepository(name string) (*models.Repository, error) {
 	var repo models.Repository
 	var idStr string
 	err := row.Scan(&idStr, &repo.Name, &repo.Path, &repo.MaxWorktrees,
-		&repo.DefaultBranch, &repo.FetchInterval, &repo.LastFetchTime, &repo.CreatedAt)
+		&repo.BaseBranch, &repo.FetchInterval, &repo.LastFetchTime, &repo.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func (s *Store) GetRepositoryByID(id uuid.UUID) (*models.Repository, error) {
 	var repo models.Repository
 	var idStr string
 	err := row.Scan(&idStr, &repo.Name, &repo.Path, &repo.MaxWorktrees,
-		&repo.DefaultBranch, &repo.FetchInterval, &repo.LastFetchTime, &repo.CreatedAt)
+		&repo.BaseBranch, &repo.FetchInterval, &repo.LastFetchTime, &repo.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (s *Store) ListRepositories() ([]*models.Repository, error) {
 		var repo models.Repository
 		var idStr string
 		err := rows.Scan(&idStr, &repo.Name, &repo.Path, &repo.MaxWorktrees,
-			&repo.DefaultBranch, &repo.FetchInterval, &repo.LastFetchTime, &repo.CreatedAt)
+			&repo.BaseBranch, &repo.FetchInterval, &repo.LastFetchTime, &repo.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -316,7 +316,7 @@ func (s *Store) ListAllWorktreesWithRepos() ([]*models.WorktreeDetail, error) {
 			&wIDStr, &wRepoIDStr, &worktree.Name, &worktree.Path,
 			&worktree.Status, &worktree.LeasedAt, &worktree.Branch, &worktree.CreatedAt,
 			&rIDStr, &repo.Name, &repo.Path, &repo.MaxWorktrees,
-			&repo.DefaultBranch, &repo.LastFetchTime, &repo.FetchInterval,
+			&repo.BaseBranch, &repo.LastFetchTime, &repo.FetchInterval,
 			&repo.CreatedAt,
 		)
 		if err != nil {

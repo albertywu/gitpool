@@ -63,3 +63,22 @@ func (v *Validator) ValidateBranch(repoPath, branch string) error {
 	}
 	return nil
 }
+
+// GetDefaultBranch detects the default branch of a Git repository
+func (v *Validator) GetDefaultBranch(repoPath string) (string, error) {
+	// Get the default branch from remote HEAD
+	cmd := exec.Command("git", "-C", repoPath, "symbolic-ref", "refs/remotes/origin/HEAD")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("could not determine default branch: %w (try setting remote HEAD with 'git remote set-head origin -a' or specify --default-branch)", err)
+	}
+
+	// Output format: "refs/remotes/origin/main"
+	// Extract just the branch name
+	refPath := string(output)
+	if len(refPath) > 20 { // "refs/remotes/origin/" is 20 chars
+		return refPath[20 : len(refPath)-1], nil // Remove trailing newline
+	}
+
+	return "", fmt.Errorf("could not parse default branch from remote HEAD")
+}
