@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/albertywu/gitpool/config"
-	"github.com/albertywu/gitpool/db"
-	"github.com/albertywu/gitpool/models"
-	"github.com/albertywu/gitpool/pool"
+	"github.com/albertywu/gitpool/internal/config"
+	"github.com/albertywu/gitpool/internal/db"
+	"github.com/albertywu/gitpool/internal/models"
+	"github.com/albertywu/gitpool/internal/pool"
 	"github.com/google/uuid"
 )
 

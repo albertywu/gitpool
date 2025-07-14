@@ -3,9 +3,9 @@ package commands
 import (
 	"fmt"
 
-	"github.com/albertywu/gitpool/config"
+	"github.com/albertywu/gitpool/internal/config"
 	"github.com/albertywu/gitpool/internal"
-	"github.com/albertywu/gitpool/ipc"
+	"github.com/albertywu/gitpool/internal/ipc"
 	"github.com/spf13/cobra"
 )
 

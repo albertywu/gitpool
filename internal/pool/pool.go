@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/albertywu/gitpool/db"
-	"github.com/albertywu/gitpool/models"
+	"github.com/albertywu/gitpool/internal/db"
+	"github.com/albertywu/gitpool/internal/models"
 	"github.com/google/uuid"
 )
 

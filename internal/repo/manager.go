@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/albertywu/gitpool/db"
-	"github.com/albertywu/gitpool/models"
+	"github.com/albertywu/gitpool/internal/db"
+	"github.com/albertywu/gitpool/internal/models"
 )
 
 type Manager struct {

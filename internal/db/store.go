@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/albertywu/gitpool/config"
-	"github.com/albertywu/gitpool/models"
+	"github.com/albertywu/gitpool/internal/config"
+	"github.com/albertywu/gitpool/internal/models"
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 )
