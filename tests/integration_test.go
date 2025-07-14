@@ -209,7 +209,7 @@ func (tc *TestContext) StopDaemon() error {
 	return nil
 }
 
-// TestDaemonCommands tests daemon start and status commands
+// TestDaemonCommands tests daemon start command
 func TestDaemonCommands(t *testing.T) {
 	tc := SetupTestContext(t)
 	defer tc.TeardownTestContext()
@@ -218,17 +218,6 @@ func TestDaemonCommands(t *testing.T) {
 		err := tc.StartDaemon()
 		if err != nil {
 			t.Fatalf("Failed to start daemon: %v", err)
-		}
-	})
-
-	t.Run("daemon status", func(t *testing.T) {
-		output, err := tc.RunGitpoolCommand("status")
-		if err != nil {
-			t.Fatalf("Daemon status command failed: %v", err)
-		}
-
-		if !strings.Contains(output, "No repositories in pool") && !strings.Contains(output, "Total repositories") {
-			t.Errorf("Expected status output (either no repos or total repos), got: %s", output)
 		}
 	})
 }
@@ -243,13 +232,13 @@ func TestRepoCommands(t *testing.T) {
 		t.Fatalf("Failed to start daemon: %v", err)
 	}
 
-	t.Run("repo add", func(t *testing.T) {
-		output, err := tc.RunGitpoolCommand("add", "test-repo", tc.TestRepo, "--max", "4", "--default-branch", "main")
+	t.Run("repo track", func(t *testing.T) {
+		output, err := tc.RunGitpoolCommand("track", "test-repo", tc.TestRepo, "--max", "4", "--default-branch", "main")
 		if err != nil {
-			t.Fatalf("Failed to add repo: %v\nOutput: %s", err, output)
+			t.Fatalf("Failed to track repo: %v\nOutput: %s", err, output)
 		}
 
-		if !strings.Contains(output, "Repository 'test-repo' added successfully") {
+		if !strings.Contains(output, "Repository 'test-repo' tracked successfully") {
 			t.Errorf("Expected success message, got: %s", output)
 		}
 	})
@@ -269,13 +258,13 @@ func TestRepoCommands(t *testing.T) {
 		}
 	})
 
-	t.Run("repo remove", func(t *testing.T) {
-		output, err := tc.RunGitpoolCommand("remove", "test-repo")
+	t.Run("repo untrack", func(t *testing.T) {
+		output, err := tc.RunGitpoolCommand("untrack", "test-repo")
 		if err != nil {
-			t.Fatalf("Failed to remove repo: %v", err)
+			t.Fatalf("Failed to untrack repo: %v", err)
 		}
 
-		if !strings.Contains(output, "Repository 'test-repo' removed successfully") {
+		if !strings.Contains(output, "Repository 'test-repo' untracked successfully") {
 			t.Errorf("Expected success message, got: %s", output)
 		}
 
@@ -302,7 +291,7 @@ func TestWorktreeCommands(t *testing.T) {
 	}
 
 	// Add repository
-	_, err := tc.RunGitpoolCommand("add", "test-repo", tc.TestRepo, "--max", "2", "--default-branch", "main")
+	_, err := tc.RunGitpoolCommand("track", "test-repo", tc.TestRepo, "--max", "2", "--default-branch", "main")
 	if err != nil {
 		t.Fatalf("Failed to add repo: %v", err)
 	}
@@ -401,7 +390,7 @@ func TestFullWorkflow(t *testing.T) {
 	}
 
 	// Add repository
-	_, err := tc.RunGitpoolCommand("add", "workflow-repo", tc.TestRepo, "--max", "3", "--default-branch", "main")
+	_, err := tc.RunGitpoolCommand("track", "workflow-repo", tc.TestRepo, "--max", "3", "--default-branch", "main")
 	if err != nil {
 		t.Fatalf("Failed to add repo: %v", err)
 	}

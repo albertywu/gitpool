@@ -74,13 +74,12 @@ func (p *Pool) ClaimWorktree(repoName string, branch string) (*models.Worktree, 
 
 	// Claim the first idle worktree
 	worktree := idleWorktrees[0]
-	claimedWorktree, err := p.allocator.ClaimWorktree(worktree)
+	claimedWorktree, err := p.allocator.ClaimWorktree(worktree, branch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to claim worktree: %w", err)
 	}
 
-	// Set the branch on the claimed worktree
-	claimedWorktree.Branch = &branch
+	// The branch is already set by ClaimWorktree
 
 	// Update database with status and branch
 	if err := p.store.UpdateWorktreeStatusAndBranch(claimedWorktree.ID.String(),
@@ -105,11 +104,17 @@ func (p *Pool) ReleaseWorktree(worktreeID string) error {
 		}
 	}
 
+	// Get repository info
+	repo, err := p.store.GetRepositoryByID(worktree.RepoID)
+	if err != nil {
+		return fmt.Errorf("failed to get repository: %w", err)
+	}
+
 	log.Printf("[INFO] Releasing worktree '%s'", worktree.Name)
 	log.Printf("[INFO] Cleaning worktree: git reset --hard, git clean -fdx")
 
 	// Release worktree
-	releasedWorktree, err := p.allocator.ReleaseWorktree(worktree)
+	releasedWorktree, err := p.allocator.ReleaseWorktree(worktree, repo)
 	if err != nil {
 		// Mark as corrupt if cleanup failed
 		p.store.UpdateWorktreeStatus(worktree.ID.String(), models.WorktreeStatusCorrupt, nil)
@@ -117,8 +122,7 @@ func (p *Pool) ReleaseWorktree(worktreeID string) error {
 		return fmt.Errorf("failed to release worktree: %w", err)
 	}
 
-	// Clear the branch when releasing
-	releasedWorktree.Branch = nil
+	// Branch is already cleared by ReleaseWorktree
 
 	// Update database
 	if err := p.store.UpdateWorktreeStatusAndBranch(releasedWorktree.ID.String(),

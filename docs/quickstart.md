@@ -43,7 +43,7 @@ gitpool start --foreground
 
 ### 2. Add Your First Repository
 ```bash
-gitpool add my-project ~/code/my-project --max 5 --default-branch main
+gitpool track my-project ~/code/my-project --max 5 --default-branch main
 ```
 
 **Parameters:**
@@ -52,12 +52,12 @@ gitpool add my-project ~/code/my-project --max 5 --default-branch main
 - `--max 5`: Maximum number of worktrees in the pool
 - `--default-branch main`: Branch to initialize worktrees with
 
-### 3. Check Pool Status
+### 3. List Worktrees
 ```bash
-gitpool status
+gitpool list
 ```
 
-You should see your repository being initialized. GitPool will create worktrees in the background.
+You should see your repository's worktrees being initialized. GitPool will create worktrees in the background.
 
 ### 4. Claim Your First Worktree
 ```bash
@@ -130,7 +130,7 @@ Or use `Ctrl+C` if running in foreground mode.
 
 ### Remove a Repository
 ```bash
-gitpool remove my-project
+gitpool untrack my-project
 ```
 
 ## Integration Examples
@@ -161,7 +161,7 @@ make build
 - name: Setup GitPool
   run: |
     gitpool start --foreground &
-    gitpool add my-app . --max 3
+    gitpool track my-app . --max 3
     
 - name: Run Tests
   run: |
@@ -195,7 +195,7 @@ test-parallel:
 - Run with `--foreground` to see error messages
 
 ### Worktree Claim Fails
-- Ensure the pool has available worktrees: `gitpool status`
+- Ensure the pool has available worktrees: `gitpool list`
 - Check that branch name is unique and valid
 - Verify repository is properly added: `gitpool list`
 

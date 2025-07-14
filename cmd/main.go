@@ -23,9 +23,8 @@ Developers can instantly "claim" worktrees and "release" them back for reuse.`,
 	// Add simplified top-level commands
 	rootCmd.AddCommand(commands.NewStartCmd())
 	rootCmd.AddCommand(commands.NewStopCmd())
-	rootCmd.AddCommand(commands.NewStatusCmd())
-	rootCmd.AddCommand(commands.NewAddCmd())
-	rootCmd.AddCommand(commands.NewRemoveCmd())
+	rootCmd.AddCommand(commands.NewTrackCmd())
+	rootCmd.AddCommand(commands.NewUntrackCmd())
 	rootCmd.AddCommand(commands.NewUseCmd())
 	rootCmd.AddCommand(commands.NewReleaseCmd())
 

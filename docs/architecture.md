@@ -31,7 +31,7 @@ GitPool follows a client-server architecture with persistent state management:
 ## Worktree Lifecycle
 
 ### Creation
-When you add a repository, gitpool immediately creates all worktrees up to the configured maximum (`--max` flag). Each worktree is:
+When you track a repository, gitpool immediately creates all worktrees up to the configured maximum (`--max` flag). Each worktree is:
 - Created as a Git worktree of the source repository
 - Initialized with the default branch
 - Registered in the database with "idle" status

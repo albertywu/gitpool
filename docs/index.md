@@ -106,7 +106,7 @@ description: Skip the wait. GitPool maintains a pool of pre-initialized Git work
         <div class="step-number">3</div>
         <h3>Add a Repository</h3>
         <div class="code-block">
-          <code>gitpool add my-app ~/repos/my-app --max 8</code>
+          <code>gitpool track my-app ~/repos/my-app --max 8</code>
         </div>
       </div>
       <div class="step">

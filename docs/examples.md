@@ -28,7 +28,7 @@ jobs:
         run: |
           gitpool start --foreground &
           sleep 2
-          gitpool add repo . --max 4 --default-branch main
+          gitpool track repo . --max 4 --default-branch main
           
       - name: Run Tests
         run: |
@@ -54,7 +54,7 @@ pipeline {
         stage('Setup') {
             steps {
                 sh 'gitpool start --foreground &'
-                sh 'gitpool add ${JOB_NAME} ${WORKSPACE} --max 5'
+                sh 'gitpool track ${JOB_NAME} ${WORKSPACE} --max 5'
             }
         }
         stage('Test') {
@@ -114,7 +114,7 @@ variables:
 before_script:
   - go install github.com/albertywu/gitpool/cmd@latest
   - gitpool start --foreground &
-  - gitpool add project $CI_PROJECT_DIR --max 3
+  - gitpool track project $CI_PROJECT_DIR --max 3
 
 stages:
   - test

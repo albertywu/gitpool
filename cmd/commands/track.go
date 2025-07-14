@@ -10,15 +10,15 @@ import (
 )
 
 var (
-	addMaxWorktrees  int
-	addDefaultBranch string
+	trackMaxWorktrees  int
+	trackDefaultBranch string
 )
 
-func NewAddCmd() *cobra.Command {
+func NewTrackCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "add <repo-name> <repo-path>",
-		Short: "Register a new repository",
-		Long:  `Register a new Git repository with gitpool to create and manage a pool of worktrees.`,
+		Use:   "track <repo-name> <repo-path>",
+		Short: "Track a new repository",
+		Long:  `Track a new Git repository with gitpool to create and manage a pool of worktrees.`,
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
@@ -33,8 +33,8 @@ func NewAddCmd() *cobra.Command {
 			req := ipc.RepoAddRequest{
 				Name:          name,
 				Path:          path,
-				MaxWorktrees:  addMaxWorktrees,
-				DefaultBranch: addDefaultBranch,
+				MaxWorktrees:  trackMaxWorktrees,
+				DefaultBranch: trackDefaultBranch,
 				FetchInterval: 60, // Default value, will be ignored by daemon
 			}
 
@@ -44,17 +44,17 @@ func NewAddCmd() *cobra.Command {
 			}
 
 			if !resp.Success {
-				internal.PrintError("Failed to add repository: %s", resp.Error)
-				return fmt.Errorf("add repository failed")
+				internal.PrintError("Failed to track repository: %s", resp.Error)
+				return fmt.Errorf("track repository failed")
 			}
 
-			internal.PrintInfo("Repository '%s' added successfully", name)
+			internal.PrintInfo("Repository '%s' tracked successfully", name)
 			return nil
 		},
 	}
 
-	cmd.Flags().IntVar(&addMaxWorktrees, "max", 8, "Maximum number of worktrees")
-	cmd.Flags().StringVar(&addDefaultBranch, "default-branch", "main", "Default branch to checkout")
+	cmd.Flags().IntVar(&trackMaxWorktrees, "max", 8, "Maximum number of worktrees")
+	cmd.Flags().StringVar(&trackDefaultBranch, "default-branch", "main", "Default branch to checkout")
 
 	return cmd
 }

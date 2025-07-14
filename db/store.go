@@ -123,6 +123,27 @@ func (s *Store) GetRepository(name string) (*models.Repository, error) {
 	return &repo, nil
 }
 
+func (s *Store) GetRepositoryByID(id uuid.UUID) (*models.Repository, error) {
+	query := `SELECT id, name, path, max_worktrees, default_branch, fetch_interval, last_fetch_time, created_at 
+			  FROM repositories WHERE id = ?`
+	row := s.db.QueryRow(query, id.String())
+
+	var repo models.Repository
+	var idStr string
+	err := row.Scan(&idStr, &repo.Name, &repo.Path, &repo.MaxWorktrees,
+		&repo.DefaultBranch, &repo.FetchInterval, &repo.LastFetchTime, &repo.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	repo.ID, err = uuid.Parse(idStr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &repo, nil
+}
+
 func (s *Store) ListRepositories() ([]*models.Repository, error) {
 	query := `SELECT id, name, path, max_worktrees, default_branch, fetch_interval, last_fetch_time, created_at 
 			  FROM repositories ORDER BY name`

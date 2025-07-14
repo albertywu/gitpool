@@ -29,7 +29,7 @@ gitpool start
 
 2. Add a repository:
 ```bash
-gitpool add my-app ~/repos/my-app --max 8 --default-branch develop
+gitpool track my-app ~/repos/my-app --max 8 --default-branch develop
 ```
 
 3. Use a worktree:
@@ -50,19 +50,14 @@ cd $(gitpool use my-app --branch feature-xyz | jq -r .path)
 gitpool release a91b6fc1-1234-5678-90ab-cdef12345678
 ```
 
-5. Check pool status:
-```bash
-gitpool status
-```
 
 ## Commands
 
 - `gitpool start` - Start the background daemon
 - `gitpool stop` - Stop the daemon (or use Ctrl+C)
-- `gitpool status` - Show pool usage statistics
 
-- `gitpool add <name> <path>` - Register a Git repository
-- `gitpool remove <name>` - Remove a repository
+- `gitpool track <name> <path>` - Track a Git repository
+- `gitpool untrack <name>` - Stop tracking a repository
 - `gitpool list` - List all worktrees with detailed status
 
 - `gitpool use <name> --branch <branch>` - Use an available worktree with a unique branch name

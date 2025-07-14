@@ -121,19 +121,41 @@ func (a *Allocator) UpdateWorktree(repo *models.Repository, worktree *models.Wor
 	return nil
 }
 
-func (a *Allocator) ClaimWorktree(worktree *models.Worktree) (*models.Worktree, error) {
+func (a *Allocator) ClaimWorktree(worktree *models.Worktree, branch string) (*models.Worktree, error) {
 	if worktree.Status != models.WorktreeStatusIdle {
 		return nil, fmt.Errorf("worktree is not idle")
+	}
+
+	// First, fetch to ensure we have the latest branches
+	cmd := exec.Command("git", "-C", worktree.Path, "fetch", "origin")
+	if err := cmd.Run(); err != nil {
+		log.Printf("[WARN] Failed to fetch before checkout: %v", err)
+	}
+
+	// Check if the branch exists locally or remotely
+	var checkoutCmd *exec.Cmd
+	
+	// Try to checkout the branch (will create it from origin if it doesn't exist locally)
+	checkoutCmd = exec.Command("git", "-C", worktree.Path, "checkout", "-B", branch, fmt.Sprintf("origin/%s", branch))
+	if output, err := checkoutCmd.CombinedOutput(); err != nil {
+		// If checkout from origin fails, try creating a new branch
+		checkoutCmd = exec.Command("git", "-C", worktree.Path, "checkout", "-b", branch)
+		if output2, err2 := checkoutCmd.CombinedOutput(); err2 != nil {
+			return nil, fmt.Errorf("failed to checkout branch %s: %w\nOutput: %s\n%s", branch, err, string(output), string(output2))
+		}
 	}
 
 	now := time.Now()
 	worktree.Status = models.WorktreeStatusInUse
 	worktree.LeasedAt = &now
+	worktree.Branch = &branch
+
+	log.Printf("[INFO] Claimed worktree %s with branch %s", worktree.Name, branch)
 
 	return worktree, nil
 }
 
-func (a *Allocator) ReleaseWorktree(worktree *models.Worktree) (*models.Worktree, error) {
+func (a *Allocator) ReleaseWorktree(worktree *models.Worktree, repo *models.Repository) (*models.Worktree, error) {
 	if worktree.Status != models.WorktreeStatusInUse {
 		return nil, fmt.Errorf("worktree is not in use")
 	}
@@ -145,8 +167,15 @@ func (a *Allocator) ReleaseWorktree(worktree *models.Worktree) (*models.Worktree
 		return worktree, fmt.Errorf("worktree cleanup failed")
 	}
 
+	// Checkout back to detached HEAD at the default branch
+	cmd := exec.Command("git", "-C", worktree.Path, "checkout", "--detach", fmt.Sprintf("origin/%s", repo.DefaultBranch))
+	if output, err := cmd.CombinedOutput(); err != nil {
+		log.Printf("[WARN] Failed to detach HEAD: %v\nOutput: %s", err, string(output))
+	}
+
 	worktree.Status = models.WorktreeStatusIdle
 	worktree.LeasedAt = nil
+	worktree.Branch = nil
 
 	return worktree, nil
 }

@@ -8,7 +8,6 @@ The integration test suite covers all major CLI commands:
 
 ### Daemon Commands
 - `gitpool start` - Starting the background daemon
-- `gitpool status` - Checking daemon status
 
 ### Repository Management
 - `gitpool add` - Adding repositories with various configurations
@@ -18,7 +17,6 @@ The integration test suite covers all major CLI commands:
 ### Worktree Operations
 - `gitpool use <repo> --branch <branch>` - Using worktrees (returns JSON with ID and path)
 - `gitpool release <worktree-id>` - Releasing worktrees back to pool
-- `gitpool status` - Checking pool status and statistics
 
 ### Full Workflow Tests
 - Complete end-to-end workflows combining multiple commands

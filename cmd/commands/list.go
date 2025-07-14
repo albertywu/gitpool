@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -60,6 +61,16 @@ func NewListCmd() *cobra.Command {
 				return nil
 			}
 
+			// Sort worktrees: first by repo name (alphabetically), then by creation time (descending)
+			sort.Slice(details, func(i, j int) bool {
+				// First, compare by repository name
+				if details[i].Repository.Name != details[j].Repository.Name {
+					return details[i].Repository.Name < details[j].Repository.Name
+				}
+				// If same repo, sort by creation time (newer first)
+				return details[i].Worktree.CreatedAt.After(details[j].Worktree.CreatedAt)
+			})
+
 			// Calculate column widths based on data
 			// Start with header lengths as minimum
 			idWidth := len("ID")
@@ -68,7 +79,7 @@ func NewListCmd() *cobra.Command {
 			statusWidth := len("STATUS")
 			maxWidth := len("MAX")
 			branchWidth := len("BRANCH")
-			lastSyncWidth := len("LAST_SYNC")
+			createdAtWidth := len("CREATED_AT")
 
 			// Find maximum widths based on actual data
 			for _, detail := range details {
@@ -116,29 +127,31 @@ func NewListCmd() *cobra.Command {
 					maxWidth = len(maxStr)
 				}
 
-				// Branch column
-				if len(repo.DefaultBranch) > branchWidth {
-					branchWidth = len(repo.DefaultBranch)
+				// Branch column - check worktree's actual branch
+				var branchLen int
+				if wt.Branch != nil && *wt.Branch != "" {
+					branchLen = len(*wt.Branch)
+				} else {
+					branchLen = len(repo.DefaultBranch)
+				}
+				if branchLen > branchWidth {
+					branchWidth = branchLen
 				}
 
-				// Last sync column
-				var lastFetchLen int
-				if repo.LastFetchTime != nil {
-					timeSince := time.Since(*repo.LastFetchTime)
-					if timeSince < time.Minute {
-						lastFetchLen = len("just now")
-					} else if timeSince < time.Hour {
-						lastFetchLen = len(fmt.Sprintf("%dm ago", int(timeSince.Minutes())))
-					} else if timeSince < 24*time.Hour {
-						lastFetchLen = len(fmt.Sprintf("%dh ago", int(timeSince.Hours())))
-					} else {
-						lastFetchLen = len(fmt.Sprintf("%dd ago", int(timeSince.Hours()/24)))
-					}
+				// Created at column
+				timeSince := time.Since(wt.CreatedAt)
+				var createdAtLen int
+				if timeSince < time.Minute {
+					createdAtLen = len("just now")
+				} else if timeSince < time.Hour {
+					createdAtLen = len(fmt.Sprintf("%dm ago", int(timeSince.Minutes())))
+				} else if timeSince < 24*time.Hour {
+					createdAtLen = len(fmt.Sprintf("%dh ago", int(timeSince.Hours())))
 				} else {
-					lastFetchLen = len("never")
+					createdAtLen = len(fmt.Sprintf("%dd ago", int(timeSince.Hours()/24)))
 				}
-				if lastFetchLen > lastSyncWidth {
-					lastSyncWidth = lastFetchLen
+				if createdAtLen > createdAtWidth {
+					createdAtWidth = createdAtLen
 				}
 			}
 
@@ -149,11 +162,11 @@ func NewListCmd() *cobra.Command {
 			statusWidth += 2
 			maxWidth += 2
 			branchWidth += 2
-			lastSyncWidth += 2
+			createdAtWidth += 2
 
 			// Print beautiful header
 			fmt.Printf("\n%s%sWorktree Pool Status%s\n", colorBold, colorCyan, colorReset)
-			totalWidth := idWidth + workspaceWidth + repoWidth + statusWidth + maxWidth + branchWidth + lastSyncWidth + 12 // 12 for spacing
+			totalWidth := idWidth + workspaceWidth + repoWidth + statusWidth + maxWidth + branchWidth + createdAtWidth + 12 // 12 for spacing
 			fmt.Printf("%s%s%s\n\n", colorGray, strings.Repeat("─", totalWidth), colorReset)
 
 			// Helper function to pad string to fixed width
@@ -173,7 +186,7 @@ func NewListCmd() *cobra.Command {
 				statusWidth, "STATUS",
 				maxWidth, "MAX",
 				branchWidth, "BRANCH",
-				lastSyncWidth, "LAST_SYNC",
+				createdAtWidth, "CREATED_AT",
 				colorReset)
 
 			// Print separator
@@ -185,7 +198,7 @@ func NewListCmd() *cobra.Command {
 				strings.Repeat("─", statusWidth),
 				strings.Repeat("─", maxWidth),
 				strings.Repeat("─", branchWidth),
-				strings.Repeat("─", lastSyncWidth),
+				strings.Repeat("─", createdAtWidth),
 				colorReset)
 
 			// Print worktrees
@@ -204,21 +217,17 @@ func NewListCmd() *cobra.Command {
 					statusText = "CORRUPT"
 				}
 
-				// Calculate time since last fetch
-				var lastFetchDisplay string
-				if repo.LastFetchTime != nil {
-					timeSince := time.Since(*repo.LastFetchTime)
-					if timeSince < time.Minute {
-						lastFetchDisplay = "just now"
-					} else if timeSince < time.Hour {
-						lastFetchDisplay = fmt.Sprintf("%dm ago", int(timeSince.Minutes()))
-					} else if timeSince < 24*time.Hour {
-						lastFetchDisplay = fmt.Sprintf("%dh ago", int(timeSince.Hours()))
-					} else {
-						lastFetchDisplay = fmt.Sprintf("%dd ago", int(timeSince.Hours()/24))
-					}
+				// Calculate time since creation
+				var createdAtDisplay string
+				timeSince := time.Since(wt.CreatedAt)
+				if timeSince < time.Minute {
+					createdAtDisplay = "just now"
+				} else if timeSince < time.Hour {
+					createdAtDisplay = fmt.Sprintf("%dm ago", int(timeSince.Minutes()))
+				} else if timeSince < 24*time.Hour {
+					createdAtDisplay = fmt.Sprintf("%dh ago", int(timeSince.Hours()))
 				} else {
-					lastFetchDisplay = "never"
+					createdAtDisplay = fmt.Sprintf("%dd ago", int(timeSince.Hours()/24))
 				}
 
 				// Format workspace display based on status
@@ -241,6 +250,14 @@ func NewListCmd() *cobra.Command {
 				terminalLink := fmt.Sprintf("\033]8;;file://%s\033\\%s%s%s\033]8;;\033\\",
 					wt.Path, workspaceColor, padRight(workspaceDisplay, workspaceWidth), colorReset)
 
+				// Determine which branch to display
+				var branchDisplay string
+				if wt.Branch != nil && *wt.Branch != "" {
+					branchDisplay = *wt.Branch
+				} else {
+					branchDisplay = repo.DefaultBranch
+				}
+
 				// Format the row with fixed widths
 				fmt.Printf("%s%-*s%s  %s  %s%-*s%s  %s%-*s%s  %-*d  %s%-*s%s  %s%-*s%s\n",
 					colorBlue, idWidth, wt.Name, colorReset,
@@ -248,8 +265,8 @@ func NewListCmd() *cobra.Command {
 					colorPurple, repoWidth, repo.Name, colorReset,
 					statusColor, statusWidth, statusText, colorReset,
 					maxWidth, repo.MaxWorktrees,
-					colorCyan, branchWidth, repo.DefaultBranch, colorReset,
-					colorGray, lastSyncWidth, lastFetchDisplay, colorReset)
+					colorCyan, branchWidth, branchDisplay, colorReset,
+					colorGray, createdAtWidth, createdAtDisplay, colorReset)
 			}
 
 			// Print summary

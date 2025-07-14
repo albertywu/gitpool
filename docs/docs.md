@@ -98,29 +98,13 @@ Stop the GitPool daemon.
 gitpool stop
 ```
 
-#### `gitpool status`
-Show pool status and statistics.
-
-```bash
-gitpool status [--format FORMAT]
-```
-
-**Options:**
-- `--format`: Output format (`table`, `json`, `yaml`) (default: `table`)
-
-**Output includes:**
-- Pool capacity and usage
-- Claimed vs available worktrees
-- Last fetch times
-- Background activity status
-
 ### Repository Management
 
-#### `gitpool add`
-Add a Git repository to GitPool.
+#### `gitpool track`
+Track a Git repository in GitPool.
 
 ```bash
-gitpool add NAME PATH [OPTIONS]
+gitpool track NAME PATH [OPTIONS]
 ```
 
 **Arguments:**
@@ -135,20 +119,20 @@ gitpool add NAME PATH [OPTIONS]
 **Examples:**
 ```bash
 # Basic usage
-gitpool add my-app ~/code/my-app
+gitpool track my-app ~/code/my-app
 
 # With custom settings
-gitpool add web-service ~/repos/web-service --max 10 --default-branch develop
+gitpool track web-service ~/repos/web-service --max 10 --default-branch develop
 
 # Custom fetch interval
-gitpool add api ~/work/api --fetch-interval 30m
+gitpool track api ~/work/api --fetch-interval 30m
 ```
 
-#### `gitpool remove`
-Remove a repository from GitPool.
+#### `gitpool untrack`
+Stop tracking a repository in GitPool.
 
 ```bash
-gitpool remove NAME [--force]
+gitpool untrack NAME [--force]
 ```
 
 **Options:**
@@ -156,11 +140,11 @@ gitpool remove NAME [--force]
 
 **Examples:**
 ```bash
-# Remove repository (fails if worktrees are claimed)
-gitpool remove my-app
+# Stop tracking repository (fails if worktrees are claimed)
+gitpool untrack my-app
 
-# Force removal
-gitpool remove my-app --force
+# Force untracking
+gitpool untrack my-app --force
 ```
 
 #### `gitpool list`
@@ -399,12 +383,12 @@ gitpool start --foreground --log-level debug
 
 **Solutions:**
 ```bash
-# Check pool status
-gitpool status
+# Check worktree list
+gitpool list
 
 # Increase pool size
-gitpool remove my-app
-gitpool add my-app ~/repos/my-app --max 10
+gitpool untrack my-app
+gitpool track my-app ~/repos/my-app --max 10
 
 # Check for stale claims
 gitpool list
@@ -489,7 +473,7 @@ if ! pgrep -f "gitpool.*start" > /dev/null; then
 fi
 
 # Check socket communication
-if ! gitpool status > /dev/null 2>&1; then
+if ! gitpool list > /dev/null 2>&1; then
     echo "❌ Cannot communicate with daemon"
     exit 1
 fi
@@ -501,7 +485,7 @@ if [ "$USAGE" -gt 90 ]; then
 fi
 
 # Check pool availability
-AVAILABLE=$(gitpool status --format json | jq '.[] | select(.available > 0) | length')
+AVAILABLE=$(gitpool list --format json | jq '[.[] | select(.status == "idle")] | length')
 if [ "$AVAILABLE" -eq 0 ]; then
     echo "⚠️ No available worktrees"
 fi
