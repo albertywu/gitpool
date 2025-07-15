@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/albertywu/gitpool/internal/config"
 	"github.com/albertywu/gitpool/internal"
+	"github.com/albertywu/gitpool/internal/config"
 	"github.com/albertywu/gitpool/internal/ipc"
 	"github.com/albertywu/gitpool/internal/models"
 	"github.com/spf13/cobra"

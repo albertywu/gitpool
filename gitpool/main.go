@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/albertywu/gitpool/cmd/commands"
+	"github.com/albertywu/gitpool/gitpool/commands"
 	"github.com/albertywu/gitpool/internal"
 	"github.com/spf13/cobra"
 )

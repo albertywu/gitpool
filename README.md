@@ -11,7 +11,7 @@ GitPool is a CLI + daemon tool for managing a pool of pre-initialized Git worktr
 ## Installation
 
 ```bash
-go install github.com/albertywu/gitpool/cmd@latest
+go install github.com/albertywu/gitpool/gitpool@latest
 ```
 
 ## Quick Start
