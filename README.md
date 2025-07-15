@@ -25,9 +25,13 @@ gp refresh <repo>                     # Fetch updates and refresh idle worktrees
 ## Quick Start
 
 1. **Start daemon**: `gp start`
-2. **Track repository**: `gp track my-app ~/repos/my-app`
-3. **Claim worktree**: `gp claim my-app feature-xyz`
-4. **Work in worktree**: `cd $(gp claim my-app feature-xyz | jq -r .path)`
+2. **Track a repository**: `gp track my-app ~/repos/my-app`
+3. **Claim and navigate to worktree**: 
+   ```bash
+   OUTPUT=$(gp claim my-app feature-xyz)  # {"path": "...", "worktree_id": "..."}
+   cd $(echo "$OUTPUT" | jq -r .path)
+   ```
+4. **Work on your changes**
 5. **Release when done**: `gp release <worktree-id>`
 
 ## Features
