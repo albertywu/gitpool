@@ -48,7 +48,7 @@ func SetupTestContext(t *testing.T) *TestContext {
 	pwd, _ := os.Getwd()
 	parentDir := filepath.Dir(pwd)
 
-	cmd := exec.Command("go", "build", "-o", gitpoolBinary, "./cmd/main.go")
+	cmd := exec.Command("go", "build", "-o", gitpoolBinary, "./gp")
 	cmd.Dir = parentDir
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to build gitpool: %v", err)
@@ -105,9 +105,27 @@ func createTestRepo(t *testing.T, repoPath string) {
 		t.Fatalf("Failed to commit: %v", err)
 	}
 
-	// Create main branch (for compatibility)
+	// Create main branch and set up proper remote tracking
 	cmd = exec.Command("git", "-C", repoPath, "checkout", "-b", "main")
-	cmd.Run()
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to create main branch: %v", err)
+	}
+
+	// Set up a fake remote origin to prevent fetch errors
+	cmd = exec.Command("git", "-C", repoPath, "remote", "add", "origin", repoPath)
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to add remote: %v", err)
+	}
+
+	// Push to origin to create the remote refs
+	cmd = exec.Command("git", "-C", repoPath, "push", "origin", "main")
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to push to origin: %v", err)
+	}
+
+	// Set up remote HEAD to point to main
+	cmd = exec.Command("git", "-C", repoPath, "remote", "set-head", "origin", "main")
+	cmd.Run() // This might fail, but that's ok for tests
 }
 
 // RunGitpoolCommand runs a gitpool command with the test environment
@@ -174,7 +192,7 @@ func (tc *TestContext) StartDaemon() error {
 		}
 
 		// Try to connect to daemon
-		output, err := tc.RunGitpoolCommand("status")
+		output, err := tc.RunGitpoolCommand("list")
 		if err == nil {
 			return nil // Success!
 		}
@@ -233,7 +251,7 @@ func TestRepoCommands(t *testing.T) {
 	}
 
 	t.Run("repo track", func(t *testing.T) {
-		output, err := tc.RunGitpoolCommand("track", "test-repo", tc.TestRepo, "--max", "4", "--default-branch", "main")
+		output, err := tc.RunGitpoolCommand("track", "test-repo", tc.TestRepo, "--max", "4", "--base-branch", "main")
 		if err != nil {
 			t.Fatalf("Failed to track repo: %v\nOutput: %s", err, output)
 		}
@@ -253,8 +271,9 @@ func TestRepoCommands(t *testing.T) {
 			t.Errorf("Expected test-repo in list, got: %s", output)
 		}
 
-		if !strings.Contains(output, "main") {
-			t.Errorf("Expected main branch in list, got: %s", output)
+		// Unclaimed worktrees show "UNCLAIMED", not the branch name
+		if !strings.Contains(output, "UNCLAIMED") {
+			t.Errorf("Expected UNCLAIMED worktrees in list, got: %s", output)
 		}
 	})
 
@@ -291,7 +310,7 @@ func TestWorktreeCommands(t *testing.T) {
 	}
 
 	// Add repository
-	_, err := tc.RunGitpoolCommand("track", "test-repo", tc.TestRepo, "--max", "2", "--default-branch", "main")
+	_, err := tc.RunGitpoolCommand("track", "test-repo", tc.TestRepo, "--max", "2", "--base-branch", "main")
 	if err != nil {
 		t.Fatalf("Failed to add repo: %v", err)
 	}
@@ -302,7 +321,7 @@ func TestWorktreeCommands(t *testing.T) {
 	var worktreeID string
 
 	t.Run("claim worktree", func(t *testing.T) {
-		output, err := tc.RunGitpoolCommand("claim", "test-repo", "--branch", "main")
+		output, err := tc.RunGitpoolCommand("claim", "test-repo", "feature-branch")
 		if err != nil {
 			t.Fatalf("Failed to claim worktree: %v\nOutput: %s", err, output)
 		}
@@ -340,7 +359,7 @@ func TestWorktreeCommands(t *testing.T) {
 	})
 
 	t.Run("pool status", func(t *testing.T) {
-		output, err := tc.RunGitpoolCommand("status")
+		output, err := tc.RunGitpoolCommand("list")
 		if err != nil {
 			t.Fatalf("Failed to get pool status: %v", err)
 		}
@@ -367,7 +386,7 @@ func TestWorktreeCommands(t *testing.T) {
 	})
 
 	t.Run("pool status after release", func(t *testing.T) {
-		output, err := tc.RunGitpoolCommand("status")
+		output, err := tc.RunGitpoolCommand("list")
 		if err != nil {
 			t.Fatalf("Failed to get pool status: %v", err)
 		}
@@ -390,7 +409,7 @@ func TestFullWorkflow(t *testing.T) {
 	}
 
 	// Add repository
-	_, err := tc.RunGitpoolCommand("track", "workflow-repo", tc.TestRepo, "--max", "3", "--default-branch", "main")
+	_, err := tc.RunGitpoolCommand("track", "workflow-repo", tc.TestRepo, "--max", "3", "--base-branch", "main")
 	if err != nil {
 		t.Fatalf("Failed to add repo: %v", err)
 	}
@@ -401,7 +420,7 @@ func TestFullWorkflow(t *testing.T) {
 	// Claim multiple worktrees
 	var worktreeIDs []string
 	for i := 0; i < 2; i++ {
-		output, err := tc.RunGitpoolCommand("claim", "workflow-repo", "--branch", fmt.Sprintf("branch-%d", i))
+		output, err := tc.RunGitpoolCommand("claim", "workflow-repo", fmt.Sprintf("branch-%d", i))
 		if err != nil {
 			t.Fatalf("Failed to claim worktree %d: %v", i, err)
 		}
@@ -414,7 +433,7 @@ func TestFullWorkflow(t *testing.T) {
 	}
 
 	// Check pool status
-	output, err := tc.RunGitpoolCommand("status")
+	output, err := tc.RunGitpoolCommand("list")
 	if err != nil {
 		t.Fatalf("Failed to get pool status: %v", err)
 	}
@@ -432,7 +451,7 @@ func TestFullWorkflow(t *testing.T) {
 	}
 
 	// Final pool status check
-	output, err = tc.RunGitpoolCommand("status")
+	output, err = tc.RunGitpoolCommand("list")
 	if err != nil {
 		t.Fatalf("Failed to get final pool status: %v", err)
 	}
