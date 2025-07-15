@@ -37,7 +37,7 @@ gp refresh <repo>                     # Fetch updates and refresh idle worktrees
 # In your Agent script
 OUTPUT=$(gp claim my-app "fix-the-thing")
 WORKTREE_PATH=$(echo "$OUTPUT" | jq -r .path)
-cd "$WORKTREE_PATH" && claude --dangerously-skip-permissions && cd -
+cd "$WORKTREE_PATH" && claude -p "fix the thing" && cd -
 gp release $(echo "$OUTPUT" | jq -r .worktree_id)
 ```
 
