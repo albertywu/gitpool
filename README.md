@@ -11,24 +11,24 @@ GitPool is a CLI + daemon tool for managing a pool of pre-initialized Git worktr
 ## Installation
 
 ```bash
-go install github.com/albertywu/gitpool/gitpool@latest
+go install github.com/albertywu/gitpool/gp@latest
 ```
 
 ## Quick Start
 
 1. Start the daemon:
 ```bash
-gitpool start
+gp start
 ```
 
 2. Add a repository:
 ```bash
-gitpool track my-app ~/repos/my-app --max 8 --default-branch develop
+gp track my-app ~/repos/my-app --max 8 --base-branch develop
 ```
 
 3. Claim a worktree:
 ```bash
-gitpool claim my-app --branch feature-xyz
+gp claim my-app --branch feature-xyz
 # Output (JSON):
 # {
 #   "worktree_id": "a91b6fc1-1234-5678-90ab-cdef12345678",
@@ -36,64 +36,64 @@ gitpool claim my-app --branch feature-xyz
 # }
 
 # To cd into the worktree:
-cd $(gitpool claim my-app --branch feature-xyz | jq -r .path)
+cd $(gp claim my-app --branch feature-xyz | jq -r .path)
 
 # Or save the worktree ID and query it later:
-WORKTREE_ID=$(gitpool claim my-app --branch feature-xyz | jq -r .worktree_id)
-cd $(gitpool show $WORKTREE_ID --format path)
+WORKTREE_ID=$(gp claim my-app --branch feature-xyz | jq -r .worktree_id)
+cd $(gp show $WORKTREE_ID --format path)
 ```
 
 4. Release a worktree when done:
 ```bash
-gitpool release a91b6fc1-1234-5678-90ab-cdef12345678
+gp release a91b6fc1-1234-5678-90ab-cdef12345678
 ```
 
 
 ## Commands
 
-- `gitpool start` - Start the background daemon
-- `gitpool stop` - Stop the daemon (or use Ctrl+C)
+- `gp start` - Start the background daemon
+- `gp stop` - Stop the daemon (or use Ctrl+C)
 
-- `gitpool track <name> <path>` - Track a Git repository
-- `gitpool untrack <name>` - Stop tracking a repository
-- `gitpool refresh <name>` - Fetch updates and refresh idle worktrees
-- `gitpool list` - List all worktrees with detailed status
+- `gp track <name> <path>` - Track a Git repository
+- `gp untrack <name>` - Stop tracking a repository
+- `gp refresh <name>` - Fetch updates and refresh idle worktrees
+- `gp list` - List all worktrees with detailed status
 
-- `gitpool claim <name> --branch <branch>` - Claim an available worktree with a unique branch name
-- `gitpool release <worktree-id>` - Return a worktree to the pool
-- `gitpool show <worktree-id>` - Get details about a specific worktree
+- `gp claim <name> --branch <branch>` - Claim an available worktree with a unique branch name
+- `gp release <worktree-id>` - Return a worktree to the pool
+- `gp show <worktree-id>` - Get details about a specific worktree
 
 ## Examples
 
 ### CI/CD Pipeline Integration
 ```bash
 # In your CI script
-OUTPUT=$(gitpool claim my-app --branch "ci-run-${BUILD_ID}")
+OUTPUT=$(gp claim my-app --branch "ci-run-${BUILD_ID}")
 WORKTREE_ID=$(echo "$OUTPUT" | jq -r .worktree_id)
 WORKTREE_PATH=$(echo "$OUTPUT" | jq -r .path)
 
 cd "$WORKTREE_PATH"
 make test
-gitpool release $WORKTREE_ID
+gp release $WORKTREE_ID
 ```
 
 ### Development Workflow
 ```bash
 # Quick experimentation without affecting main workspace
-OUTPUT=$(gitpool claim my-project --branch experiment-feature)
+OUTPUT=$(gp claim my-project --branch experiment-feature)
 WORKTREE_ID=$(echo "$OUTPUT" | jq -r .worktree_id)
 WORKTREE_PATH=$(echo "$OUTPUT" | jq -r .path)
 
 cd "$WORKTREE_PATH"
 # ... make changes, test ideas ...
-gitpool release $WORKTREE_ID
+gp release $WORKTREE_ID
 ```
 
 ### Parallel Testing
 ```bash
 # Run tests in parallel across multiple worktrees
 for i in {1..4}; do
-  WORKTREE_PATH=$(gitpool claim my-app --branch "test-suite-$i" | jq -r .path)
+  WORKTREE_PATH=$(gp claim my-app --branch "test-suite-$i" | jq -r .path)
   (cd "$WORKTREE_PATH" && make test-suite-$i) &
 done
 wait
@@ -107,7 +107,7 @@ GitPool requires a unique branch name when claiming a worktree:
 - **Branch validation** ensures names follow Git conventions (no spaces, special characters, etc.)
 - **Automatic cleanup** - branch associations are cleared when worktrees are released
 
-The `gitpool list` command shows:
+The `gp list` command shows:
 - **Sorting**: Claimed worktrees appear first, followed by unclaimed ones
 - **Claimed worktrees**: Display the branch name in yellow as a clickable link
 - **Unclaimed worktrees**: Display "UNCLAIMED" in gray as a clickable link

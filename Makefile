@@ -3,9 +3,9 @@
 # Default target
 all: build
 
-# Build the gp binary (gitpool)
+# Build the gitpool binary locally
 build:
-	go build -o gp ./gitpool
+	go build -o gitpool ./gp
 
 # Run all tests
 test: test-unit test-integration
@@ -24,17 +24,17 @@ test-integration-verbose:
 
 # Clean up build artifacts and test files
 clean:
-	rm -f gp gitpool/gitpool
+	rm -f gitpool gp
 	rm -f tests/integration_test
 	pkill -f "gitpool.*daemon" || true
 
 # Install the binary
 install: build
-	cp gp /usr/local/bin/gitpool
+	cp gitpool /usr/local/bin/gitpool
 
 # Development helpers
 dev-build:
-	go build -race -o gp ./gitpool
+	go build -race -o gitpool ./gp
 
 fmt:
 	go fmt ./...
@@ -48,7 +48,7 @@ lint:
 # Help target
 help:
 	@echo "Available targets:"
-	@echo "  build                 - Build the gp binary (gitpool)"
+	@echo "  build                 - Build the gitpool binary locally"
 	@echo "  test                  - Run all tests (unit + integration)"
 	@echo "  test-unit             - Run unit tests only"
 	@echo "  test-integration      - Run integration tests"

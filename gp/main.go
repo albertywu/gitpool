@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/albertywu/gitpool/gitpool/commands"
+	"github.com/albertywu/gitpool/gp/commands"
 	"github.com/albertywu/gitpool/internal"
 	"github.com/spf13/cobra"
 )
@@ -13,9 +13,9 @@ func main() {
 	internal.InitLogger()
 
 	rootCmd := &cobra.Command{
-		Use:   "gitpool",
+		Use:   "gp",
 		Short: "Manage a pool of pre-initialized Git worktrees",
-		Long: `gitpool is a CLI + daemon tool for managing a pool of pre-initialized Git worktrees.
+		Long: `gp is a CLI + daemon tool for managing a pool of pre-initialized Git worktrees.
 It enables fast, disposable checkouts for builds, tests, and CI pipelines without repeated Git fetches.
 Developers can instantly "claim" worktrees and "release" them back for reuse.`,
 	}
