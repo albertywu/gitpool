@@ -12,21 +12,18 @@ import (
 )
 
 func NewClaimCmd() *cobra.Command {
-	var branch string
-
 	cmd := &cobra.Command{
-		Use:   "claim <repo-name> --branch <branch-name>",
+		Use:   "claim <repo-name> <branch-name>",
 		Short: "Claim a worktree from the pool",
 		Long: `Claim an available worktree from the pool for the specified repository.
 
-The --branch flag is required and must be a valid git branch name.
-Branch names must be unique within the repository's worktrees.
+The branch name must be a valid git branch name and unique within the repository's worktrees.
 
 The command outputs JSON with the worktree ID and path to STDOUT.
 Error messages are printed to STDERR.
 
 Example:
-  gitpool claim my-app --branch feature-xyz
+  gp claim my-app feature-xyz
   
 Output:
   {
@@ -36,18 +33,14 @@ Output:
   
 Usage with jq:
   # Get just the path
-  gitpool claim my-app --branch feature-xyz | jq -r .path
+  gp claim my-app feature-xyz | jq -r .path
   
   # CD into the worktree
-  cd $(gitpool claim my-app --branch feature-xyz | jq -r .path)`,
-		Args: cobra.ExactArgs(1),
+  cd $(gp claim my-app feature-xyz | jq -r .path)`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repoName := args[0]
-
-			// Validate branch flag is provided
-			if branch == "" {
-				return fmt.Errorf("--branch flag is required")
-			}
+			branch := args[1]
 
 			// Validate branch name
 			if err := validateBranchName(branch); err != nil {
@@ -103,9 +96,6 @@ Usage with jq:
 			return nil
 		},
 	}
-
-	cmd.Flags().StringVar(&branch, "branch", "", "Branch name for the worktree (required)")
-	cmd.MarkFlagRequired("branch")
 
 	return cmd
 }
