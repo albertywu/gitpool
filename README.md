@@ -22,18 +22,6 @@ gp show <worktree-id>                 # Show worktree details
 gp refresh <repo>                     # Fetch updates and refresh idle worktrees
 ```
 
-## Quick Start
-
-1. **Start daemon**: `gp start`
-2. **Track a repository**: `gp track my-app ~/repos/my-app`
-3. **Claim and navigate to worktree**: 
-   ```bash
-   OUTPUT=$(gp claim my-app feature-xyz)  # {"path": "...", "worktree_id": "..."}
-   cd $(echo "$OUTPUT" | jq -r .path)
-   ```
-4. **Work on your changes**
-5. **Release when done**: `gp release <worktree-id>`
-
 ## Features
 
 - **Instant checkouts** - Worktrees are pre-fetched and ready
@@ -41,6 +29,17 @@ gp refresh <repo>                     # Fetch updates and refresh idle worktrees
 - **Automatic maintenance** - Background daemon keeps pool healthy
 - **Branch isolation** - Unique branch names prevent conflicts
 - **JSON output** - Easy integration with scripts and CI/CD
+
+
+## Example: Run Agent in Worktree
+
+```bash
+# In your Agent script
+OUTPUT=$(gp claim my-app "fix-the-thing")
+WORKTREE_PATH=$(echo "$OUTPUT" | jq -r .path)
+cd "$WORKTREE_PATH" && claude --dangerously-skip-permissions && cd -
+gp release $(echo "$OUTPUT" | jq -r .worktree_id)
+```
 
 ## Example: CI/CD Integration
 
