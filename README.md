@@ -1,18 +1,12 @@
 # GitPool
 
-GitPool is a CLI + daemon tool for managing a pool of pre-initialized Git worktrees. It enables fast, disposable checkouts for builds, tests, and CI pipelines without repeated Git fetches.
-
-## What is GitPool?
-
-GitPool maintains a pool of pre-initialized Git worktrees that can be instantly used and released. Instead of waiting on slow `git clone` or `git fetch` or `git checkout` operations, developers and CI systems get immediate access to ready-to-use worktrees.
+GitPool is a CLI + daemon tool for managing a pool of pre-initialized Git worktrees. It enables fast, disposable git workspaces for multi-agent workflows and CI pipelines.
 
 ## Why Use GitPool?
 
-- **Instant checkouts**: No waiting for git operations - worktrees are pre-fetched and ready
-- **Perfect for CI/CD**: Dramatically speed up build and test pipelines 
-- **Resource efficient**: Worktrees share Git objects with the source repository
-- **Safe isolation**: Each used worktree is independent and protected from updates
-- **Automatic maintenance**: Background daemon keeps worktrees fresh and pool at capacity
+- **Instant checkouts**: No waiting for expensive git checkouts - worktrees are pre-fetched and ready for use.
+- **Resource efficient**: Worktrees share Git objects with the source repository.
+- **Automatic maintenance**: Background daemon keeps worktrees in a ready-to-use state and maintains a pool capacity.
 
 ## Installation
 

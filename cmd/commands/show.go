@@ -56,7 +56,7 @@ Use --format flag to get specific fields for scripting.`,
 				fmt.Println(detail.Worktree.Path)
 			case "json":
 				output := map[string]interface{}{
-					"worktree_id": detail.Worktree.ID,
+					"worktree_id": detail.Worktree.Name,
 					"path":        detail.Worktree.Path,
 					"repo":        detail.Repository.Name,
 					"branch":      detail.Worktree.Branch,
@@ -67,7 +67,7 @@ Use --format flag to get specific fields for scripting.`,
 				fmt.Println(string(jsonBytes))
 			default:
 				// Default human-readable format
-				fmt.Printf("Worktree ID: %s\n", detail.Worktree.ID)
+				fmt.Printf("Worktree ID: %s\n", detail.Worktree.Name)
 				fmt.Printf("Path:        %s\n", detail.Worktree.Path)
 				fmt.Printf("Repository:  %s\n", detail.Repository.Name)
 				fmt.Printf("Status:      %s\n", detail.Worktree.Status)
